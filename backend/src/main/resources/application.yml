@@ -1,0 +1,38 @@
+spring:
+  application:
+    name: honeylms-backend
+
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/honeylms}
+    username: ${SPRING_DATASOURCE_USERNAME:honeylms}
+    password: ${SPRING_DATASOURCE_PASSWORD:honeylms}
+
+  jpa:
+    hibernate:
+      # Le schéma est entièrement piloté par Flyway : Hibernate ne doit jamais le modifier.
+      ddl-auto: validate
+    open-in-view: false
+    properties:
+      hibernate:
+        format_sql: true
+
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+
+server:
+  port: ${SERVER_PORT:8080}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: never
+
+logging:
+  level:
+    com.honeygroup.honeylms: INFO
+    org.flywaydb: INFO

@@ -1,0 +1,40 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: honeylms-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: honeylms
+      POSTGRES_USER: honeylms
+      POSTGRES_PASSWORD: honeylms
+    ports:
+      - "5432:5432"
+    volumes:
+      - honeylms-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U honeylms -d honeylms"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: honeylms-backend
+    restart: unless-stopped
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/honeylms
+      SPRING_DATASOURCE_USERNAME: honeylms
+      SPRING_DATASOURCE_PASSWORD: honeylms
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+# Le service "frontend" (Angular) sera ajouté au Sprint 2,
+# une fois le squelette Angular créé.
+
+volumes:
+  honeylms-postgres-data:
