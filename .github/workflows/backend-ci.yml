@@ -45,9 +45,12 @@ jobs:
           java-version: "21"
           cache: maven
 
+      - name: Make mvnw executable
+        run: chmod +x mvnw
+
       - name: Build and run tests
         env:
           SPRING_DATASOURCE_URL: jdbc:postgresql://localhost:5432/honeylms_test
           SPRING_DATASOURCE_USERNAME: honeylms
           SPRING_DATASOURCE_PASSWORD: honeylms
-        run: mvn -B clean verify
+        run: ./mvnw -B clean verify
