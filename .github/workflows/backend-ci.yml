@@ -15,9 +15,6 @@ on:
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: backend
 
     services:
       postgres:
@@ -46,11 +43,12 @@ jobs:
           cache: maven
 
       - name: Make mvnw executable
-        run: chmod +x mvnw
+        run: chmod +x mvnw  # ← s'exécute à la racine (plus de working-directory)
 
       - name: Build and run tests
+        working-directory: backend  # ← uniquement cette étape dans backend/
         env:
           SPRING_DATASOURCE_URL: jdbc:postgresql://localhost:5432/honeylms_test
           SPRING_DATASOURCE_USERNAME: honeylms
           SPRING_DATASOURCE_PASSWORD: honeylms
-        run: ./mvnw -B clean verify
+        run: ../mvnw -B clean verify  # ← remonter d'un cran pour trouver mvnw
