@@ -23,6 +23,13 @@ spring:
 server:
   port: ${SERVER_PORT:8080}
 
+app:
+  jwt:
+    # /!\ Valeur par défaut pour le développement uniquement.
+    # En production : définir JWT_SECRET via une variable d'environnement (secret >= 32 caractères).
+    secret: ${JWT_SECRET:please-change-this-dev-only-jwt-secret-0123456789}
+    expiration-ms: ${JWT_EXPIRATION_MS:86400000} # 24h, cf. Dossier de Conception §12.2
+
 management:
   endpoints:
     web:
