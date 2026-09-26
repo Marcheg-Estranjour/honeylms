@@ -2,6 +2,7 @@ package com.honeygroup.honeylms.security;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -17,6 +18,12 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
  * Only /api/auth/register and /api/auth/login are public. Everything else -
  * including /api/auth/me - requires a valid JWT, checked by JwtAuthenticationFilter
  * before Spring Security's own UsernamePasswordAuthenticationFilter runs.
+ *
+ * Role-based rules are declared here at the URL level (requestMatchers().hasRole(...)),
+ * which is enough for simple cases like "ADMIN only". Ownership/perimeter checks that
+ * depend on data (e.g. "this Trainer owns this Course") will need @PreAuthorize +
+ * @EnableMethodSecurity, or a dedicated check inside the service - added when that
+ * story comes up rather than now.
  */
 @Configuration
 @EnableWebSecurity
@@ -41,6 +48,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers("/api/auth/register", "/api/auth/login").permitAll()
                         .requestMatchers("/actuator/health").permitAll()
+                        .requestMatchers(HttpMethod.PATCH, "/api/users/*/status").hasRole("ADMIN")
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
