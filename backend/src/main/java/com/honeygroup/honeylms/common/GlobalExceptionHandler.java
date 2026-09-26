@@ -3,6 +3,7 @@ package com.honeygroup.honeylms.common;
 import com.honeygroup.honeylms.user.AccountDisabledException;
 import com.honeygroup.honeylms.user.EmailAlreadyExistsException;
 import com.honeygroup.honeylms.user.InvalidCredentialsException;
+import com.honeygroup.honeylms.user.UserNotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.stream.Collectors;
 import org.springframework.http.HttpStatus;
@@ -35,6 +36,12 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiError> handleAccountDisabled(AccountDisabledException ex,
                                                             HttpServletRequest request) {
         return build(HttpStatus.FORBIDDEN, ex.getMessage(), request);
+    }
+
+    @ExceptionHandler(UserNotFoundException.class)
+    public ResponseEntity<ApiError> handleUserNotFound(UserNotFoundException ex,
+                                                         HttpServletRequest request) {
+        return build(HttpStatus.NOT_FOUND, ex.getMessage(), request);
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
