@@ -8,18 +8,25 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 /**
  * Spring Security 7 configuration (mandatory Lambda DSL - no WebSecurityConfigurerAdapter,
  * no .and() chaining). API REST stateless : no session, no CSRF, no form login.
  *
- * At this stage (US-AUTH-01, registration only), there is no authentication
- * mechanism wired in yet - only /api/auth/** is public. The JWT filter that
- * will authenticate the other endpoints is added with US-AUTH-02 (login).
+ * Only /api/auth/register and /api/auth/login are public. Everything else -
+ * including /api/auth/me - requires a valid JWT, checked by JwtAuthenticationFilter
+ * before Spring Security's own UsernamePasswordAuthenticationFilter runs.
  */
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
+
+    private final JwtAuthenticationFilter jwtAuthenticationFilter;
+
+    public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter) {
+        this.jwtAuthenticationFilter = jwtAuthenticationFilter;
+    }
 
     @Bean
     public PasswordEncoder passwordEncoder() {
@@ -32,10 +39,11 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(authorize -> authorize
-                        .requestMatchers("/api/auth/**").permitAll()
+                        .requestMatchers("/api/auth/register", "/api/auth/login").permitAll()
                         .requestMatchers("/actuator/health").permitAll()
                         .anyRequest().authenticated()
-                );
+                )
+                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
