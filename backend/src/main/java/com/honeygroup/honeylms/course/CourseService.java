@@ -7,7 +7,6 @@ import com.honeygroup.honeylms.course.dto.CreateCourseRequest;
 import com.honeygroup.honeylms.course.dto.UpdateCourseRequest;
 import com.honeygroup.honeylms.user.RoleCode;
 import com.honeygroup.honeylms.user.UserAccount;
-import com.honeygroup.honeylms.user.UserAccountRepository;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.stereotype.Service;
@@ -18,14 +17,14 @@ public class CourseService {
 
     private final CourseRepository courseRepository;
     private final CourseTrainerRepository courseTrainerRepository;
-    private final UserAccountRepository userAccountRepository;
+    private final CourseAuthorizationService courseAuthorizationService;
 
     public CourseService(CourseRepository courseRepository,
                           CourseTrainerRepository courseTrainerRepository,
-                          UserAccountRepository userAccountRepository) {
+                          CourseAuthorizationService courseAuthorizationService) {
         this.courseRepository = courseRepository;
         this.courseTrainerRepository = courseTrainerRepository;
-        this.userAccountRepository = userAccountRepository;
+        this.courseAuthorizationService = courseAuthorizationService;
     }
 
     /**
@@ -58,8 +57,8 @@ public class CourseService {
             throw new ForbiddenActionException("This course is not published yet");
         }
 
-        UserAccount requester = resolveRequester(requesterEmail);
-        assertCanManageCourse(course, requester);
+        UserAccount requester = courseAuthorizationService.resolveRequester(requesterEmail);
+        courseAuthorizationService.assertCanManageCourse(course, requester);
         return toDetail(course);
     }
 
@@ -71,7 +70,7 @@ public class CourseService {
      */
     @Transactional
     public CourseDetail createCourse(CreateCourseRequest request, String requesterEmail) {
-        UserAccount requester = resolveRequester(requesterEmail);
+        UserAccount requester = courseAuthorizationService.resolveRequester(requesterEmail);
 
         Course course = Course.builder()
                 .title(request.title().trim())
@@ -97,8 +96,8 @@ public class CourseService {
     @Transactional
     public CourseDetail updateCourse(Long courseId, UpdateCourseRequest request, String requesterEmail) {
         Course course = findCourseOrThrow(courseId);
-        UserAccount requester = resolveRequester(requesterEmail);
-        assertCanManageCourse(course, requester);
+        UserAccount requester = courseAuthorizationService.resolveRequester(requesterEmail);
+        courseAuthorizationService.assertCanManageCourse(course, requester);
 
         course.setTitle(request.title().trim());
         course.setDescription(request.description());
@@ -109,14 +108,13 @@ public class CourseService {
 
     /**
      * US-COURSE-05 — Publish course. Restricted to the Trainer(s) assigned to
-     * this Course, or Admin. Idempotent: publishing an already-published Course
-     * simply confirms its current state rather than failing.
+     * this Course, or Admin. Idempotent.
      */
     @Transactional
     public CourseDetail publishCourse(Long courseId, String requesterEmail) {
         Course course = findCourseOrThrow(courseId);
-        UserAccount requester = resolveRequester(requesterEmail);
-        assertCanManageCourse(course, requester);
+        UserAccount requester = courseAuthorizationService.resolveRequester(requesterEmail);
+        courseAuthorizationService.assertCanManageCourse(course, requester);
 
         course.setStatus(PublicationStatus.PUBLISHED);
         return toDetail(courseRepository.save(course));
@@ -127,29 +125,6 @@ public class CourseService {
     private Course findCourseOrThrow(Long courseId) {
         return courseRepository.findById(courseId)
                 .orElseThrow(() -> new CourseNotFoundException(courseId));
-    }
-
-    private UserAccount resolveRequester(String email) {
-        return userAccountRepository.findByEmail(email)
-                .orElseThrow(() -> new IllegalStateException(
-                        "Authenticated user not found in database: " + email));
-    }
-
-    /**
-     * Central perimeter check for anything Course-scoped. ADMIN always passes;
-     * a TRAINER must be explicitly assigned via CourseTrainer.
-     */
-    private void assertCanManageCourse(Course course, UserAccount requester) {
-        if (RoleCode.ADMIN.name().equals(requester.getRole().getCode())) {
-            return;
-        }
-
-        boolean isAssignedTrainer = courseTrainerRepository
-                .existsByCourse_IdAndTrainer_Id(course.getId(), requester.getId());
-
-        if (!isAssignedTrainer) {
-            throw new ForbiddenActionException("You are not allowed to manage this course");
-        }
     }
 
     private CourseSummary toSummary(Course course) {

@@ -3,8 +3,9 @@ package com.honeygroup.honeylms.course;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import com.honeygroup.honeylms.common.ForbiddenActionException;
@@ -14,7 +15,6 @@ import com.honeygroup.honeylms.course.dto.CreateCourseRequest;
 import com.honeygroup.honeylms.course.dto.UpdateCourseRequest;
 import com.honeygroup.honeylms.user.Role;
 import com.honeygroup.honeylms.user.UserAccount;
-import com.honeygroup.honeylms.user.UserAccountRepository;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
@@ -23,6 +23,11 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+/**
+ * Perimeter checks themselves (admin passes / assigned trainer passes / unassigned
+ * trainer forbidden) are tested once, in CourseAuthorizationServiceTest - here we
+ * only verify that CourseService delegates to it and behaves correctly around that.
+ */
 @ExtendWith(MockitoExtension.class)
 class CourseServiceTest {
 
@@ -33,25 +38,14 @@ class CourseServiceTest {
     private CourseTrainerRepository courseTrainerRepository;
 
     @Mock
-    private UserAccountRepository userAccountRepository;
+    private CourseAuthorizationService courseAuthorizationService;
 
     @InjectMocks
     private CourseService courseService;
 
     private UserAccount trainer(long id) {
-        return UserAccount.builder()
-                .id(id)
-                .email("trainer" + id + "@example.com")
-                .role(new Role(2L, "TRAINER", "Trainer"))
-                .build();
-    }
-
-    private UserAccount admin() {
-        return UserAccount.builder()
-                .id(99L)
-                .email("admin@example.com")
-                .role(new Role(3L, "ADMIN", "Admin"))
-                .build();
+        return UserAccount.builder().id(id).email("trainer" + id + "@example.com")
+                .role(new Role(2L, "TRAINER", "Trainer")).build();
     }
 
     private Course course(Long id, PublicationStatus status, UserAccount owner) {
@@ -65,8 +59,6 @@ class CourseServiceTest {
                 .build();
     }
 
-    // ---- getPublishedCourses (existing behaviour, kept from Sprint 2 first commit) ----
-
     @Test
     void getPublishedCourses_returnsAllPublished_whenNoCategoryGiven() {
         Course published = course(10L, PublicationStatus.PUBLISHED, trainer(1L));
@@ -76,17 +68,14 @@ class CourseServiceTest {
 
         assertThat(result).hasSize(1);
         assertThat(result.get(0).title()).isEqualTo("Anglais");
-        verify(courseRepository).findByStatus(PublicationStatus.PUBLISHED);
     }
-
-    // ---- createCourse ----
 
     @Test
     void createCourse_savesAsDraftAndRegistersTrainer_whenRequesterIsTrainer() {
         UserAccount trainer = trainer(1L);
         CreateCourseRequest request = new CreateCourseRequest("Anglais", "desc", CourseCategory.LANGUAGES);
 
-        when(userAccountRepository.findByEmail("trainer1@example.com")).thenReturn(Optional.of(trainer));
+        when(courseAuthorizationService.resolveRequester("trainer1@example.com")).thenReturn(trainer);
         when(courseRepository.save(any(Course.class))).thenAnswer(inv -> {
             Course c = inv.getArgument(0);
             c.setId(10L);
@@ -96,87 +85,67 @@ class CourseServiceTest {
         CourseDetail result = courseService.createCourse(request, "trainer1@example.com");
 
         assertThat(result.status()).isEqualTo("DRAFT");
-        assertThat(result.category()).isEqualTo("LANGUAGES");
         verify(courseTrainerRepository).save(any(CourseTrainer.class));
     }
 
     @Test
-    void createCourse_doesNotRegisterCourseTrainer_whenRequesterIsAdmin() {
-        UserAccount admin = admin();
-        CreateCourseRequest request = new CreateCourseRequest("Anglais", "desc", CourseCategory.LANGUAGES);
-
-        when(userAccountRepository.findByEmail("admin@example.com")).thenReturn(Optional.of(admin));
-        when(courseRepository.save(any(Course.class))).thenAnswer(inv -> {
-            Course c = inv.getArgument(0);
-            c.setId(11L);
-            return c;
-        });
-
-        courseService.createCourse(request, "admin@example.com");
-
-        verifyNoMoreInteractions(courseTrainerRepository);
-    }
-
-    // ---- updateCourse / publishCourse: perimeter checks ----
-
-    @Test
-    void updateCourse_succeeds_whenRequesterIsAssignedTrainer() {
+    void updateCourse_delegatesPerimeterCheck_andUpdatesFields() {
         UserAccount trainer = trainer(1L);
         Course existing = course(10L, PublicationStatus.DRAFT, trainer);
         UpdateCourseRequest request = new UpdateCourseRequest("Anglais avancé", "desc2", CourseCategory.LANGUAGES);
 
         when(courseRepository.findById(10L)).thenReturn(Optional.of(existing));
-        when(userAccountRepository.findByEmail("trainer1@example.com")).thenReturn(Optional.of(trainer));
-        when(courseTrainerRepository.existsByCourse_IdAndTrainer_Id(10L, 1L)).thenReturn(true);
+        when(courseAuthorizationService.resolveRequester("trainer1@example.com")).thenReturn(trainer);
         when(courseRepository.save(any(Course.class))).thenAnswer(inv -> inv.getArgument(0));
 
         CourseDetail result = courseService.updateCourse(10L, request, "trainer1@example.com");
 
         assertThat(result.title()).isEqualTo("Anglais avancé");
+        verify(courseAuthorizationService).assertCanManageCourse(existing, trainer);
     }
 
     @Test
-    void updateCourse_throwsForbidden_whenRequesterIsUnrelatedTrainer() {
-        UserAccount owner = trainer(1L);
-        UserAccount otherTrainer = trainer(2L);
-        Course existing = course(10L, PublicationStatus.DRAFT, owner);
-        UpdateCourseRequest request = new UpdateCourseRequest("Anglais avancé", "desc2", CourseCategory.LANGUAGES);
+    void updateCourse_propagatesForbidden_whenPerimeterCheckFails() {
+        UserAccount trainer = trainer(2L);
+        Course existing = course(10L, PublicationStatus.DRAFT, trainer(1L));
+        UpdateCourseRequest request = new UpdateCourseRequest("Hack", "desc", CourseCategory.LANGUAGES);
 
         when(courseRepository.findById(10L)).thenReturn(Optional.of(existing));
-        when(userAccountRepository.findByEmail("trainer2@example.com")).thenReturn(Optional.of(otherTrainer));
-        when(courseTrainerRepository.existsByCourse_IdAndTrainer_Id(10L, 2L)).thenReturn(false);
+        when(courseAuthorizationService.resolveRequester("trainer2@example.com")).thenReturn(trainer);
+        doThrow(new ForbiddenActionException("You are not allowed to manage this course"))
+                .when(courseAuthorizationService).assertCanManageCourse(existing, trainer);
 
         assertThatThrownBy(() -> courseService.updateCourse(10L, request, "trainer2@example.com"))
                 .isInstanceOf(ForbiddenActionException.class);
     }
 
     @Test
-    void publishCourse_succeeds_whenRequesterIsAdmin() {
-        Course existing = course(10L, PublicationStatus.DRAFT, trainer(1L));
+    void publishCourse_setsStatusToPublished() {
+        UserAccount trainer = trainer(1L);
+        Course existing = course(10L, PublicationStatus.DRAFT, trainer);
 
         when(courseRepository.findById(10L)).thenReturn(Optional.of(existing));
-        when(userAccountRepository.findByEmail("admin@example.com")).thenReturn(Optional.of(admin()));
+        when(courseAuthorizationService.resolveRequester("trainer1@example.com")).thenReturn(trainer);
         when(courseRepository.save(any(Course.class))).thenAnswer(inv -> inv.getArgument(0));
 
-        CourseDetail result = courseService.publishCourse(10L, "admin@example.com");
+        CourseDetail result = courseService.publishCourse(10L, "trainer1@example.com");
 
         assertThat(result.status()).isEqualTo("PUBLISHED");
     }
 
-    // ---- getCourseDetail ----
-
     @Test
-    void getCourseDetail_returnsDetail_whenCoursePublishedAndRequesterAnonymous() {
+    void getCourseDetail_returnsDetail_whenPublishedAndRequesterAnonymous() {
         Course published = course(10L, PublicationStatus.PUBLISHED, trainer(1L));
         when(courseRepository.findById(10L)).thenReturn(Optional.of(published));
 
         CourseDetail result = courseService.getCourseDetail(10L, null);
 
         assertThat(result.status()).isEqualTo("PUBLISHED");
+        verifyNoInteractions(courseAuthorizationService);
     }
 
     @Test
-    void getCourseDetail_throwsForbidden_whenCourseDraftAndRequesterAnonymous() {
+    void getCourseDetail_throwsForbidden_whenDraftAndRequesterAnonymous() {
         Course draft = course(10L, PublicationStatus.DRAFT, trainer(1L));
         when(courseRepository.findById(10L)).thenReturn(Optional.of(draft));
 

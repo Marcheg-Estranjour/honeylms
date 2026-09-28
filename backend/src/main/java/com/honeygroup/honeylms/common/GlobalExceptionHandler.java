@@ -1,6 +1,8 @@
 package com.honeygroup.honeylms.common;
 
 import com.honeygroup.honeylms.course.CourseNotFoundException;
+import com.honeygroup.honeylms.course.LessonNotFoundException;
+import com.honeygroup.honeylms.course.ModuleNotFoundException;
 import com.honeygroup.honeylms.user.AccountDisabledException;
 import com.honeygroup.honeylms.user.EmailAlreadyExistsException;
 import com.honeygroup.honeylms.user.InvalidCredentialsException;
@@ -48,6 +50,18 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(CourseNotFoundException.class)
     public ResponseEntity<ApiError> handleCourseNotFound(CourseNotFoundException ex,
+                                                           HttpServletRequest request) {
+        return build(HttpStatus.NOT_FOUND, ex.getMessage(), request);
+    }
+
+    @ExceptionHandler(ModuleNotFoundException.class)
+    public ResponseEntity<ApiError> handleModuleNotFound(ModuleNotFoundException ex,
+                                                           HttpServletRequest request) {
+        return build(HttpStatus.NOT_FOUND, ex.getMessage(), request);
+    }
+
+    @ExceptionHandler(LessonNotFoundException.class)
+    public ResponseEntity<ApiError> handleLessonNotFound(LessonNotFoundException ex,
                                                            HttpServletRequest request) {
         return build(HttpStatus.NOT_FOUND, ex.getMessage(), request);
     }
