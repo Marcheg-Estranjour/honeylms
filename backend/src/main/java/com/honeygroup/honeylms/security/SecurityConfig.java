@@ -20,10 +20,10 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
  * before Spring Security's own UsernamePasswordAuthenticationFilter runs.
  *
  * Role-based rules are declared here at the URL level (requestMatchers().hasRole(...)),
- * which is enough for simple cases like "ADMIN only". Ownership/perimeter checks that
- * depend on data (e.g. "this Trainer owns this Course") will need @PreAuthorize +
- * @EnableMethodSecurity, or a dedicated check inside the service - added when that
- * story comes up rather than now.
+ * which is enough for simple, role-only cases ("ADMIN only", "TRAINER or ADMIN can
+ * POST"). Data-dependent ownership/perimeter checks (e.g. "this Trainer owns this
+ * Course") cannot be expressed as a URL matcher - they live in CourseAuthorizationService
+ * and are called explicitly from CourseService/CourseModuleService/LessonService.
  */
 @Configuration
 @EnableWebSecurity
@@ -48,7 +48,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers("/api/auth/register", "/api/auth/login").permitAll()
                         .requestMatchers("/actuator/health").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/courses", "/api/courses/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/courses", "/api/courses/*").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/courses").hasAnyRole("TRAINER", "ADMIN")
                         .requestMatchers(HttpMethod.PUT, "/api/courses/*").hasAnyRole("TRAINER", "ADMIN")
                         .requestMatchers(HttpMethod.PATCH, "/api/courses/*/publish").hasAnyRole("TRAINER", "ADMIN")
