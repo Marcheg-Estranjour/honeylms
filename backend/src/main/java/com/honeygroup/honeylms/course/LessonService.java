@@ -14,13 +14,16 @@ public class LessonService {
     private final LessonRepository lessonRepository;
     private final CourseModuleRepository courseModuleRepository;
     private final CourseAuthorizationService courseAuthorizationService;
+    private final LearningAccessService learningAccessService;
 
     public LessonService(LessonRepository lessonRepository,
                           CourseModuleRepository courseModuleRepository,
-                          CourseAuthorizationService courseAuthorizationService) {
+                          CourseAuthorizationService courseAuthorizationService,
+                          LearningAccessService learningAccessService) {
         this.lessonRepository = lessonRepository;
         this.courseModuleRepository = courseModuleRepository;
         this.courseAuthorizationService = courseAuthorizationService;
+        this.learningAccessService = learningAccessService;
     }
 
     /**
@@ -77,26 +80,43 @@ public class LessonService {
     }
 
     /**
-     * Management view (owner Trainer/Admin only, any status). Enrollment-gated
-     * student access is US-LEARNING-07 (separate).
+     * US-LEARNING-07 — Access lesson. Role-aware: a STUDENT needs Enrollment and
+     * Course + Module + Lesson all PUBLISHED (TrainingClass never counts); a
+     * TRAINER/ADMIN gets the management view (any status, within their perimeter).
      */
     @Transactional(readOnly = true)
     public LessonDetail getLesson(Long lessonId, String requesterEmail) {
         Lesson lesson = findLessonOrThrow(lessonId);
         UserAccount requester = courseAuthorizationService.resolveRequester(requesterEmail);
-        courseAuthorizationService.assertCanManageCourse(lesson.getCourseModule().getCourse(), requester);
+
+        if (learningAccessService.isStudent(requester)) {
+            learningAccessService.assertStudentCanAccessLesson(lesson, requester);
+        } else {
+            courseAuthorizationService.assertCanManageCourse(lesson.getCourseModule().getCourse(), requester);
+        }
         return toDetail(lesson);
     }
 
+    /**
+     * Role-aware listing. A STUDENT only sees PUBLISHED lessons of a PUBLISHED module
+     * of a Course they are enrolled in.
+     */
     @Transactional(readOnly = true)
     public List<LessonDetail> listLessons(Long moduleId, String requesterEmail) {
         CourseModule module = findModuleOrThrow(moduleId);
         UserAccount requester = courseAuthorizationService.resolveRequester(requesterEmail);
-        courseAuthorizationService.assertCanManageCourse(module.getCourse(), requester);
+        List<Lesson> lessons = lessonRepository.findByCourseModule_IdOrderByDisplayOrderAsc(moduleId);
 
-        return lessonRepository.findByCourseModule_IdOrderByDisplayOrderAsc(moduleId).stream()
-                .map(this::toDetail)
-                .toList();
+        if (learningAccessService.isStudent(requester)) {
+            learningAccessService.assertStudentCanAccessModule(module, requester);
+            lessons = lessons.stream()
+                    .filter(l -> l.getStatus() == PublicationStatus.PUBLISHED)
+                    .toList();
+        } else {
+            courseAuthorizationService.assertCanManageCourse(module.getCourse(), requester);
+        }
+
+        return lessons.stream().map(this::toDetail).toList();
     }
 
     private CourseModule findModuleOrThrow(Long moduleId) {
