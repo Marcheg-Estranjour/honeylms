@@ -17,9 +17,9 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * All endpoints here require authentication (see SecurityConfig: nothing under
- * /api/courses/{id}/modules or /api/modules/** is public) - this is a
- * Trainer/Admin management surface, not a Student-facing one (that's US-LEARNING-07).
+ * All endpoints require authentication (nothing under /api/courses/{id}/modules or
+ * /api/modules/** is public). Writes are TRAINER/ADMIN only; reads are role-aware:
+ * Trainer/Admin see the management view, an enrolled Student sees published content only.
  */
 @RestController
 public class CourseModuleController {

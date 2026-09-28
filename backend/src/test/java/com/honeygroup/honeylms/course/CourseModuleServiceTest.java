@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.honeygroup.honeylms.common.ForbiddenActionException;
@@ -12,6 +13,7 @@ import com.honeygroup.honeylms.course.dto.ModuleDetail;
 import com.honeygroup.honeylms.course.dto.UpdateModuleRequest;
 import com.honeygroup.honeylms.user.Role;
 import com.honeygroup.honeylms.user.UserAccount;
+import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -30,6 +32,9 @@ class CourseModuleServiceTest {
 
     @Mock
     private CourseAuthorizationService courseAuthorizationService;
+
+    @Mock
+    private LearningAccessService learningAccessService;
 
     @InjectMocks
     private CourseModuleService courseModuleService;
@@ -111,5 +116,44 @@ class CourseModuleServiceTest {
         assertThatThrownBy(() -> courseModuleService.updateModule(
                 999L, new UpdateModuleRequest("x", "y"), "trainer1@example.com"))
                 .isInstanceOf(ModuleNotFoundException.class);
+    }
+
+    @Test
+    void listModules_forStudent_returnsOnlyPublishedModules() {
+        UserAccount student = UserAccount.builder().id(5L).email("student@example.com")
+                .role(new Role(1L, "STUDENT", "Student")).build();
+        Course course = course();
+        CourseModule published = CourseModule.builder().id(1L).course(course).title("A1")
+                .displayOrder(1).status(PublicationStatus.PUBLISHED).build();
+        CourseModule draft = CourseModule.builder().id(2L).course(course).title("A2")
+                .displayOrder(2).status(PublicationStatus.DRAFT).build();
+
+        when(courseRepository.findById(10L)).thenReturn(Optional.of(course));
+        when(courseAuthorizationService.resolveRequester("student@example.com")).thenReturn(student);
+        when(courseModuleRepository.findByCourse_IdOrderByDisplayOrderAsc(10L)).thenReturn(List.of(published, draft));
+        when(learningAccessService.isStudent(student)).thenReturn(true);
+
+        List<ModuleDetail> result = courseModuleService.listModules(10L, "student@example.com");
+
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).title()).isEqualTo("A1");
+        verify(learningAccessService).assertStudentCanAccessCourse(course, student);
+    }
+
+    @Test
+    void getModule_forStudent_propagatesForbidden_whenNotAllowed() {
+        UserAccount student = UserAccount.builder().id(5L).email("student@example.com")
+                .role(new Role(1L, "STUDENT", "Student")).build();
+        CourseModule module = CourseModule.builder().id(100L).course(course()).title("A1")
+                .displayOrder(1).status(PublicationStatus.PUBLISHED).build();
+
+        when(courseModuleRepository.findById(100L)).thenReturn(Optional.of(module));
+        when(courseAuthorizationService.resolveRequester("student@example.com")).thenReturn(student);
+        when(learningAccessService.isStudent(student)).thenReturn(true);
+        doThrow(new ForbiddenActionException("no access"))
+                .when(learningAccessService).assertStudentCanAccessModule(module, student);
+
+        assertThatThrownBy(() -> courseModuleService.getModule(100L, "student@example.com"))
+                .isInstanceOf(ForbiddenActionException.class);
     }
 }

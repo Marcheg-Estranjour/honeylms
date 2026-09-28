@@ -17,8 +17,9 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * Trainer/Admin management surface - all endpoints require authentication.
- * Student-facing, Enrollment-gated Lesson access is US-LEARNING-07 (separate).
+ * All endpoints require authentication. Writes are TRAINER/ADMIN only; reads are
+ * role-aware: Trainer/Admin see the management view, a Student needs Enrollment and
+ * published Course/Module/Lesson (US-LEARNING-07).
  */
 @RestController
 public class LessonController {
