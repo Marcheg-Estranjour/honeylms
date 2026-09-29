@@ -7,6 +7,9 @@ import com.honeygroup.honeylms.course.ModuleNotFoundException;
 import com.honeygroup.honeylms.course.ResourceNotFoundException;
 import com.honeygroup.honeylms.enrollment.AlreadyEnrolledException;
 import com.honeygroup.honeylms.file.InvalidFileException;
+import com.honeygroup.honeylms.submission.AlreadySubmittedException;
+import com.honeygroup.honeylms.submission.SubmissionDeadlinePassedException;
+import com.honeygroup.honeylms.submission.SubmissionNotFoundException;
 import com.honeygroup.honeylms.user.AccountDisabledException;
 import com.honeygroup.honeylms.user.EmailAlreadyExistsException;
 import com.honeygroup.honeylms.user.InvalidCredentialsException;
@@ -92,6 +95,24 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(ForbiddenActionException.class)
     public ResponseEntity<ApiError> handleForbiddenAction(ForbiddenActionException ex,
                                                             HttpServletRequest request) {
+        return build(HttpStatus.FORBIDDEN, ex.getMessage(), request);
+    }
+
+    @ExceptionHandler(SubmissionNotFoundException.class)
+    public ResponseEntity<ApiError> handleSubmissionNotFound(SubmissionNotFoundException ex,
+                                                               HttpServletRequest request) {
+        return build(HttpStatus.NOT_FOUND, ex.getMessage(), request);
+    }
+
+    @ExceptionHandler(AlreadySubmittedException.class)
+    public ResponseEntity<ApiError> handleAlreadySubmitted(AlreadySubmittedException ex,
+                                                             HttpServletRequest request) {
+        return build(HttpStatus.CONFLICT, ex.getMessage(), request);
+    }
+
+    @ExceptionHandler(SubmissionDeadlinePassedException.class)
+    public ResponseEntity<ApiError> handleDeadlinePassed(SubmissionDeadlinePassedException ex,
+                                                           HttpServletRequest request) {
         return build(HttpStatus.FORBIDDEN, ex.getMessage(), request);
     }
 
