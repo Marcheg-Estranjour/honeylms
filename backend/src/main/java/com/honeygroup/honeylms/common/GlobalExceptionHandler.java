@@ -7,9 +7,14 @@ import com.honeygroup.honeylms.course.ModuleNotFoundException;
 import com.honeygroup.honeylms.course.ResourceNotFoundException;
 import com.honeygroup.honeylms.enrollment.AlreadyEnrolledException;
 import com.honeygroup.honeylms.file.InvalidFileException;
+import com.honeygroup.honeylms.progress.NoResumePointException;
 import com.honeygroup.honeylms.submission.AlreadySubmittedException;
 import com.honeygroup.honeylms.submission.SubmissionDeadlinePassedException;
 import com.honeygroup.honeylms.submission.SubmissionNotFoundException;
+import com.honeygroup.honeylms.trainingclass.AlreadyClassMemberException;
+import com.honeygroup.honeylms.trainingclass.ClassMembershipNotFoundException;
+import com.honeygroup.honeylms.trainingclass.InvalidClassAssignmentException;
+import com.honeygroup.honeylms.trainingclass.TrainingClassNotFoundException;
 import com.honeygroup.honeylms.user.AccountDisabledException;
 import com.honeygroup.honeylms.user.EmailAlreadyExistsException;
 import com.honeygroup.honeylms.user.InvalidCredentialsException;
@@ -114,6 +119,36 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiError> handleDeadlinePassed(SubmissionDeadlinePassedException ex,
                                                            HttpServletRequest request) {
         return build(HttpStatus.FORBIDDEN, ex.getMessage(), request);
+    }
+
+    @ExceptionHandler(NoResumePointException.class)
+    public ResponseEntity<ApiError> handleNoResumePoint(NoResumePointException ex,
+                                                          HttpServletRequest request) {
+        return build(HttpStatus.NOT_FOUND, ex.getMessage(), request);
+    }
+
+    @ExceptionHandler(TrainingClassNotFoundException.class)
+    public ResponseEntity<ApiError> handleTrainingClassNotFound(TrainingClassNotFoundException ex,
+                                                                  HttpServletRequest request) {
+        return build(HttpStatus.NOT_FOUND, ex.getMessage(), request);
+    }
+
+    @ExceptionHandler(ClassMembershipNotFoundException.class)
+    public ResponseEntity<ApiError> handleClassMembershipNotFound(ClassMembershipNotFoundException ex,
+                                                                    HttpServletRequest request) {
+        return build(HttpStatus.NOT_FOUND, ex.getMessage(), request);
+    }
+
+    @ExceptionHandler(AlreadyClassMemberException.class)
+    public ResponseEntity<ApiError> handleAlreadyClassMember(AlreadyClassMemberException ex,
+                                                               HttpServletRequest request) {
+        return build(HttpStatus.CONFLICT, ex.getMessage(), request);
+    }
+
+    @ExceptionHandler(InvalidClassAssignmentException.class)
+    public ResponseEntity<ApiError> handleInvalidClassAssignment(InvalidClassAssignmentException ex,
+                                                                   HttpServletRequest request) {
+        return build(HttpStatus.UNPROCESSABLE_ENTITY, ex.getMessage(), request);
     }
 
     @ExceptionHandler(InvalidFileException.class)
