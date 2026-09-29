@@ -27,14 +27,17 @@ services:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/honeylms
       SPRING_DATASOURCE_USERNAME: honeylms
       SPRING_DATASOURCE_PASSWORD: honeylms
+      STORAGE_LOCATION: /data/uploads
     ports:
       - "8080:8080"
+    volumes:
+      - honeylms-uploads:/data/uploads
     depends_on:
       postgres:
         condition: service_healthy
 
-# Le service "frontend" (Angular) sera ajouté au Sprint 2,
-# une fois le squelette Angular créé.
+# Le service "frontend" (Angular) sera ajouté quand le squelette Angular sera créé.
 
 volumes:
   honeylms-postgres-data:
+  honeylms-uploads:
