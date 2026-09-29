@@ -20,6 +20,14 @@ spring:
     enabled: true
     locations: classpath:db/migration
 
+  servlet:
+    multipart:
+      # Légèrement au-dessus de la limite métier (50 MiB, cf. FileStorageProperties) :
+      # c'est FileStorageService, pas cette limite technique, qui doit produire le
+      # message d'erreur exact pour un dépassement.
+      max-file-size: 55MB
+      max-request-size: 55MB
+
 server:
   port: ${SERVER_PORT:8080}
 
@@ -29,6 +37,10 @@ app:
     # En production : définir JWT_SECRET via une variable d'environnement (secret >= 32 caractères).
     secret: ${JWT_SECRET:please-change-this-dev-only-jwt-secret-0123456789}
     expiration-ms: ${JWT_EXPIRATION_MS:86400000} # 24h, cf. Dossier de Conception §12.2
+  storage:
+    location: ${STORAGE_LOCATION:/data/uploads}
+    max-size-bytes: ${STORAGE_MAX_SIZE_BYTES:52428800} # 50 MiB, règle métier 14
+    allowed-extensions: ${STORAGE_ALLOWED_EXTENSIONS:pdf,docx,xlsx,pptx,jpg,jpeg,png,mp3,mp4}
 
 management:
   endpoints:

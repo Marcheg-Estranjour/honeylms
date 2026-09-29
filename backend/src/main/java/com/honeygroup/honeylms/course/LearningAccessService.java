@@ -44,4 +44,14 @@ public class LearningAccessService {
             throw new ForbiddenActionException("This lesson is not published");
         }
     }
+
+    /**
+     * US-ASSIGN-04 — same chain as a Lesson, plus the Assignment itself must be PUBLISHED.
+     */
+    public void assertStudentCanAccessAssignment(Assignment assignment, UserAccount student) {
+        assertStudentCanAccessLesson(assignment.getLesson(), student);
+        if (assignment.getStatus() != PublicationStatus.PUBLISHED) {
+            throw new ForbiddenActionException("This assignment is not published");
+        }
+    }
 }
