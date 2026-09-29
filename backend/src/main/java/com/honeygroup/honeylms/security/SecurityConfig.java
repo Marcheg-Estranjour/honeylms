@@ -80,6 +80,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.DELETE, "/api/classes/*/trainers/*").hasAnyRole("TRAINER", "ADMIN")
                         .requestMatchers(HttpMethod.GET, "/api/classes/*/members").hasAnyRole("TRAINER", "ADMIN")
                         .requestMatchers(HttpMethod.GET, "/api/me/courses").hasRole("STUDENT")
+                        .requestMatchers(HttpMethod.GET, "/api/users", "/api/users/*").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.PATCH, "/api/users/*/status").hasRole("ADMIN")
                         .anyRequest().authenticated()
                 )

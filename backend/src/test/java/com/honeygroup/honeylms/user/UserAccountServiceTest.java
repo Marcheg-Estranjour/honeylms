@@ -6,6 +6,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 import com.honeygroup.honeylms.user.dto.UserSummary;
+import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -33,6 +34,34 @@ class UserAccountServiceTest {
                 .role(studentRole)
                 .active(true)
                 .build();
+    }
+
+    @Test
+    void listUsers_returnsAllAccountsAsSummaries() {
+        when(userAccountRepository.findAll()).thenReturn(List.of(account()));
+
+        List<UserSummary> result = userAccountService.listUsers();
+
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).email()).isEqualTo("alice@example.com");
+        assertThat(result.get(0).role()).isEqualTo("STUDENT");
+    }
+
+    @Test
+    void getUser_returnsSummary_whenIdExists() {
+        when(userAccountRepository.findById(1L)).thenReturn(Optional.of(account()));
+
+        UserSummary result = userAccountService.getUser(1L);
+
+        assertThat(result.email()).isEqualTo("alice@example.com");
+    }
+
+    @Test
+    void getUser_throwsUserNotFound_whenIdUnknown() {
+        when(userAccountRepository.findById(99L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> userAccountService.getUser(99L))
+                .isInstanceOf(UserNotFoundException.class);
     }
 
     @Test

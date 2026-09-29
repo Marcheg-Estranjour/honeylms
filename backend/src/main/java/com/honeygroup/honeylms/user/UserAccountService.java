@@ -1,6 +1,7 @@
 package com.honeygroup.honeylms.user;
 
 import com.honeygroup.honeylms.user.dto.UserSummary;
+import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -11,6 +12,20 @@ public class UserAccountService {
 
     public UserAccountService(UserAccountRepository userAccountRepository) {
         this.userAccountRepository = userAccountRepository;
+    }
+
+    /** US-ADMIN-01 — Manage users. ADMIN only (see SecurityConfig). */
+    @Transactional(readOnly = true)
+    public List<UserSummary> listUsers() {
+        return userAccountRepository.findAll().stream()
+                .map(this::toSummary)
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public UserSummary getUser(Long userId) {
+        return toSummary(userAccountRepository.findById(userId)
+                .orElseThrow(() -> new UserNotFoundException(userId)));
     }
 
     /**
@@ -24,14 +39,16 @@ public class UserAccountService {
                 .orElseThrow(() -> new UserNotFoundException(userId));
 
         account.setActive(active);
-        UserAccount saved = userAccountRepository.save(account);
+        return toSummary(userAccountRepository.save(account));
+    }
 
+    private UserSummary toSummary(UserAccount account) {
         return new UserSummary(
-                saved.getId(),
-                saved.getEmail(),
-                saved.getFirstName(),
-                saved.getLastName(),
-                saved.getRole().getCode()
+                account.getId(),
+                account.getEmail(),
+                account.getFirstName(),
+                account.getLastName(),
+                account.getRole().getCode()
         );
     }
 }
