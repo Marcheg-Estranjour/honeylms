@@ -2,9 +2,12 @@ package com.honeygroup.honeylms.common;
 
 import com.honeygroup.honeylms.course.AssignmentNotFoundException;
 import com.honeygroup.honeylms.course.CourseNotFoundException;
+import com.honeygroup.honeylms.course.InvalidTrainerAssignmentException;
 import com.honeygroup.honeylms.course.LessonNotFoundException;
 import com.honeygroup.honeylms.course.ModuleNotFoundException;
 import com.honeygroup.honeylms.course.ResourceNotFoundException;
+import com.honeygroup.honeylms.course.TrainerAlreadyAssignedException;
+import com.honeygroup.honeylms.course.TrainerAssignmentNotFoundException;
 import com.honeygroup.honeylms.enrollment.AlreadyEnrolledException;
 import com.honeygroup.honeylms.file.InvalidFileException;
 import com.honeygroup.honeylms.progress.NoResumePointException;
@@ -148,6 +151,24 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(InvalidClassAssignmentException.class)
     public ResponseEntity<ApiError> handleInvalidClassAssignment(InvalidClassAssignmentException ex,
                                                                    HttpServletRequest request) {
+        return build(HttpStatus.UNPROCESSABLE_ENTITY, ex.getMessage(), request);
+    }
+
+    @ExceptionHandler(TrainerAlreadyAssignedException.class)
+    public ResponseEntity<ApiError> handleTrainerAlreadyAssigned(TrainerAlreadyAssignedException ex,
+                                                                   HttpServletRequest request) {
+        return build(HttpStatus.CONFLICT, ex.getMessage(), request);
+    }
+
+    @ExceptionHandler(TrainerAssignmentNotFoundException.class)
+    public ResponseEntity<ApiError> handleTrainerAssignmentNotFound(TrainerAssignmentNotFoundException ex,
+                                                                      HttpServletRequest request) {
+        return build(HttpStatus.NOT_FOUND, ex.getMessage(), request);
+    }
+
+    @ExceptionHandler(InvalidTrainerAssignmentException.class)
+    public ResponseEntity<ApiError> handleInvalidTrainerAssignment(InvalidTrainerAssignmentException ex,
+                                                                     HttpServletRequest request) {
         return build(HttpStatus.UNPROCESSABLE_ENTITY, ex.getMessage(), request);
     }
 

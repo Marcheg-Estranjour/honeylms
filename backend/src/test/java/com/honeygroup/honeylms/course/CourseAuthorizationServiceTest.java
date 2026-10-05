@@ -59,6 +59,19 @@ class CourseAuthorizationServiceTest {
     }
 
     @Test
+    void assertAdmin_passes_forAdmin() {
+        courseAuthorizationService.assertAdmin(userWithRole(1L, "ADMIN")); // no exception
+    }
+
+    @Test
+    void assertAdmin_throws_forTrainerAndStudent() {
+        assertThatThrownBy(() -> courseAuthorizationService.assertAdmin(userWithRole(2L, "TRAINER")))
+                .isInstanceOf(ForbiddenActionException.class);
+        assertThatThrownBy(() -> courseAuthorizationService.assertAdmin(userWithRole(3L, "STUDENT")))
+                .isInstanceOf(ForbiddenActionException.class);
+    }
+
+    @Test
     void resolveRequester_returnsAccount_whenEmailExists() {
         UserAccount account = userWithRole(1L, "TRAINER");
         when(userAccountRepository.findByEmail("trainer@example.com")).thenReturn(Optional.of(account));

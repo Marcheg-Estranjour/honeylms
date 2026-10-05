@@ -31,6 +31,16 @@ public class CourseAuthorizationService {
     }
 
     /**
+     * Guard for actions reserved to the Admin (create a course, assign trainers...).
+     * Complements the URL-level rule in SecurityConfig as a second barrier.
+     */
+    public void assertAdmin(UserAccount requester) {
+        if (!RoleCode.ADMIN.name().equals(requester.getRole().getCode())) {
+            throw new ForbiddenActionException("Only an Admin can perform this action");
+        }
+    }
+
+    /**
      * ADMIN always passes. A TRAINER must be explicitly assigned to the Course
      * via CourseTrainer - simply having role TRAINER is not enough.
      */

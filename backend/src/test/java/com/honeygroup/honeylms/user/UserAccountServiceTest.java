@@ -3,8 +3,11 @@ package com.honeygroup.honeylms.user;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.honeygroup.honeylms.user.dto.CreateTrainerRequest;
 import com.honeygroup.honeylms.user.dto.UserSummary;
 import java.util.List;
 import java.util.Optional;
@@ -13,12 +16,19 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 @ExtendWith(MockitoExtension.class)
 class UserAccountServiceTest {
 
     @Mock
     private UserAccountRepository userAccountRepository;
+
+    @Mock
+    private RoleRepository roleRepository;
+
+    @Mock
+    private PasswordEncoder passwordEncoder;
 
     @InjectMocks
     private UserAccountService userAccountService;
@@ -34,6 +44,38 @@ class UserAccountServiceTest {
                 .role(studentRole)
                 .active(true)
                 .build();
+    }
+
+    @Test
+    void createTrainer_forcesTrainerRole_hashesPassword_andNormalizesEmail() {
+        Role trainerRole = new Role(2L, "TRAINER", "Trainer");
+        CreateTrainerRequest request = new CreateTrainerRequest("Paul@Example.com", "password123", " Paul ", "Durand");
+
+        when(userAccountRepository.existsByEmail("paul@example.com")).thenReturn(false);
+        when(roleRepository.findByCode("TRAINER")).thenReturn(Optional.of(trainerRole));
+        when(passwordEncoder.encode("password123")).thenReturn("hashed");
+        when(userAccountRepository.save(any(UserAccount.class))).thenAnswer(inv -> {
+            UserAccount a = inv.getArgument(0);
+            a.setId(7L);
+            return a;
+        });
+
+        UserSummary result = userAccountService.createTrainer(request);
+
+        assertThat(result.id()).isEqualTo(7L);
+        assertThat(result.email()).isEqualTo("paul@example.com");
+        assertThat(result.firstName()).isEqualTo("Paul");
+        assertThat(result.role()).isEqualTo("TRAINER");
+    }
+
+    @Test
+    void createTrainer_throwsEmailAlreadyExists_andSavesNothing_whenEmailTaken() {
+        CreateTrainerRequest request = new CreateTrainerRequest("paul@example.com", "password123", "Paul", "Durand");
+        when(userAccountRepository.existsByEmail("paul@example.com")).thenReturn(true);
+
+        assertThatThrownBy(() -> userAccountService.createTrainer(request))
+                .isInstanceOf(EmailAlreadyExistsException.class);
+        verify(userAccountRepository, never()).save(any());
     }
 
     @Test

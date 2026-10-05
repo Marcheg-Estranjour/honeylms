@@ -5,7 +5,6 @@ import com.honeygroup.honeylms.course.dto.CourseDetail;
 import com.honeygroup.honeylms.course.dto.CourseSummary;
 import com.honeygroup.honeylms.course.dto.CreateCourseRequest;
 import com.honeygroup.honeylms.course.dto.UpdateCourseRequest;
-import com.honeygroup.honeylms.user.RoleCode;
 import com.honeygroup.honeylms.user.UserAccount;
 import java.util.List;
 import java.util.Optional;
@@ -16,14 +15,11 @@ import org.springframework.transaction.annotation.Transactional;
 public class CourseService {
 
     private final CourseRepository courseRepository;
-    private final CourseTrainerRepository courseTrainerRepository;
     private final CourseAuthorizationService courseAuthorizationService;
 
     public CourseService(CourseRepository courseRepository,
-                          CourseTrainerRepository courseTrainerRepository,
                           CourseAuthorizationService courseAuthorizationService) {
         this.courseRepository = courseRepository;
-        this.courseTrainerRepository = courseTrainerRepository;
         this.courseAuthorizationService = courseAuthorizationService;
     }
 
@@ -63,14 +59,16 @@ public class CourseService {
     }
 
     /**
-     * US-COURSE-03 — Create course. TRAINER or ADMIN only (also enforced at
-     * the URL level in SecurityConfig). Always created as DRAFT. The creating
-     * Trainer is automatically added to CourseTrainer - an Admin creating a
-     * course is not, since Admin already bypasses perimeter checks entirely.
+     * US-COURSE-03 — Create course. VALIDÉ : creating a course is reserved to the
+     * Admin (a Trainer never creates a course - he manages the ones assigned to him
+     * via CourseTrainer, see CourseTrainerService). Also enforced at URL level in
+     * SecurityConfig; this check is the second barrier. Always created as DRAFT,
+     * with no trainer assigned yet.
      */
     @Transactional
     public CourseDetail createCourse(CreateCourseRequest request, String requesterEmail) {
         UserAccount requester = courseAuthorizationService.resolveRequester(requesterEmail);
+        courseAuthorizationService.assertAdmin(requester);
 
         Course course = Course.builder()
                 .title(request.title().trim())
@@ -80,13 +78,7 @@ public class CourseService {
                 .createdBy(requester)
                 .build();
 
-        Course saved = courseRepository.save(course);
-
-        if (RoleCode.TRAINER.name().equals(requester.getRole().getCode())) {
-            courseTrainerRepository.save(CourseTrainer.of(saved, requester));
-        }
-
-        return toDetail(saved);
+        return toDetail(courseRepository.save(course));
     }
 
     /**
@@ -117,6 +109,23 @@ public class CourseService {
         courseAuthorizationService.assertCanManageCourse(course, requester);
 
         course.setStatus(PublicationStatus.PUBLISHED);
+        return toDetail(courseRepository.save(course));
+    }
+
+    /**
+     * US-COURSE-06 — Unpublish course (VALIDÉ : a Trainer can publish AND unpublish
+     * the courses assigned to him). Same authorization as publish. Existing
+     * enrollments are kept, but Students lose access while the Course is DRAFT
+     * (the access chain requires PUBLISHED), and progress is computed on what is
+     * currently published (known risk, Dossier de Conception §19 risque 5).
+     */
+    @Transactional
+    public CourseDetail unpublishCourse(Long courseId, String requesterEmail) {
+        Course course = findCourseOrThrow(courseId);
+        UserAccount requester = courseAuthorizationService.resolveRequester(requesterEmail);
+        courseAuthorizationService.assertCanManageCourse(course, requester);
+
+        course.setStatus(PublicationStatus.DRAFT);
         return toDetail(courseRepository.save(course));
     }
 
