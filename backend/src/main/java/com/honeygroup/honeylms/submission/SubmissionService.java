@@ -13,7 +13,7 @@ import com.honeygroup.honeylms.file.StoredFileRepository;
 import com.honeygroup.honeylms.submission.dto.CorrectionRequest;
 import com.honeygroup.honeylms.submission.dto.SubmissionDetail;
 import com.honeygroup.honeylms.user.UserAccount;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -67,7 +67,7 @@ public class SubmissionService {
                 .assignment(assignment)
                 .student(student)
                 .storedFile(storedFile)
-                .submittedAt(LocalDateTime.now())
+                .submittedAt(Instant.now())
                 .status(SubmissionStatus.SUBMITTED)
                 .build();
 
@@ -93,7 +93,7 @@ public class SubmissionService {
         StoredFile newFile = storeFile(file, student);
 
         submission.setStoredFile(newFile);
-        submission.setSubmittedAt(LocalDateTime.now());
+        submission.setSubmittedAt(Instant.now());
         submission.setStatus(SubmissionStatus.SUBMITTED);
         submission.setGrade(null);
         submission.setFeedback(null);
@@ -152,7 +152,7 @@ public class SubmissionService {
         submission.setGrade(request.grade());
         submission.setFeedback(request.feedback());
         submission.setCorrectedBy(requester);
-        submission.setCorrectedAt(LocalDateTime.now());
+        submission.setCorrectedAt(Instant.now());
         submission.setStatus(SubmissionStatus.CORRECTED);
 
         return toDetail(submissionRepository.save(submission));
@@ -161,7 +161,7 @@ public class SubmissionService {
     // ---- helpers ----
 
     private void assertDeadlineNotPassed(Assignment assignment) {
-        if (assignment.getDueDate() != null && LocalDateTime.now().isAfter(assignment.getDueDate())) {
+        if (assignment.getDueDate() != null && Instant.now().isAfter(assignment.getDueDate())) {
             throw new SubmissionDeadlinePassedException();
         }
     }

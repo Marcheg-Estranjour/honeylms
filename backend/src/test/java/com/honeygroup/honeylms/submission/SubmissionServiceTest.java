@@ -26,7 +26,8 @@ import com.honeygroup.honeylms.submission.dto.SubmissionDetail;
 import com.honeygroup.honeylms.user.Role;
 import com.honeygroup.honeylms.user.UserAccount;
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
@@ -70,7 +71,7 @@ class SubmissionServiceTest {
                 .role(new Role(2L, "TRAINER", "Trainer")).build();
     }
 
-    private Assignment assignment(LocalDateTime dueDate) {
+    private Assignment assignment(Instant dueDate) {
         Course course = Course.builder().id(10L).category(CourseCategory.LANGUAGES).build();
         CourseModule module = CourseModule.builder().id(100L).course(course).status(PublicationStatus.PUBLISHED).build();
         Lesson lesson = Lesson.builder().id(1000L).courseModule(module).status(PublicationStatus.PUBLISHED).build();
@@ -83,7 +84,7 @@ class SubmissionServiceTest {
     @Test
     void submit_createsSubmission_whenAllowedAndNoExistingSubmission() {
         UserAccount student = student();
-        Assignment assignment = assignment(LocalDateTime.now().plusDays(1));
+        Assignment assignment = assignment(Instant.now().plus(1, ChronoUnit.DAYS));
         MockMultipartFile file = new MockMultipartFile("file", "devoir.pdf", "application/pdf", "c".getBytes());
 
         when(assignmentRepository.findById(2000L)).thenReturn(Optional.of(assignment));
@@ -129,7 +130,7 @@ class SubmissionServiceTest {
     @Test
     void submit_throwsDeadlinePassed_whenDueDateInThePast() {
         UserAccount student = student();
-        Assignment assignment = assignment(LocalDateTime.now().minusDays(1));
+        Assignment assignment = assignment(Instant.now().minus(1, ChronoUnit.DAYS));
         MockMultipartFile file = new MockMultipartFile("file", "devoir.pdf", "application/pdf", "c".getBytes());
 
         when(assignmentRepository.findById(2000L)).thenReturn(Optional.of(assignment));
@@ -160,7 +161,7 @@ class SubmissionServiceTest {
     @Test
     void replace_updatesSameRowAndResetsCorrection_whenOwnerAndBeforeDeadline() {
         UserAccount student = student();
-        Assignment assignment = assignment(LocalDateTime.now().plusDays(1));
+        Assignment assignment = assignment(Instant.now().plus(1, ChronoUnit.DAYS));
         StoredFile oldFile = StoredFile.builder().id(500L).storageKey("old.pdf").build();
         Submission submission = Submission.builder().id(9000L).assignment(assignment).student(student)
                 .storedFile(oldFile).status(SubmissionStatus.CORRECTED)
@@ -205,7 +206,7 @@ class SubmissionServiceTest {
     @Test
     void replace_throwsDeadlinePassed_whenAssignmentDueDateInThePast() {
         UserAccount student = student();
-        Assignment assignment = assignment(LocalDateTime.now().minusHours(1));
+        Assignment assignment = assignment(Instant.now().minus(1, ChronoUnit.HOURS));
         Submission submission = Submission.builder().id(9000L).student(student).assignment(assignment).build();
         MockMultipartFile file = new MockMultipartFile("file", "v2.pdf", "application/pdf", "c".getBytes());
 

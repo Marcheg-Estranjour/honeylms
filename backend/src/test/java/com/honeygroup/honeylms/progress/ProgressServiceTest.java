@@ -23,7 +23,8 @@ import com.honeygroup.honeylms.progress.dto.LessonCompletionDetail;
 import com.honeygroup.honeylms.progress.dto.ResumeResponse;
 import com.honeygroup.honeylms.user.Role;
 import com.honeygroup.honeylms.user.UserAccount;
-import java.time.LocalDateTime;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
@@ -89,7 +90,7 @@ class ProgressServiceTest {
         UserAccount student = student();
         Lesson lesson = lesson(1000L);
         LessonCompletion existing = LessonCompletion.newFor(student, lesson);
-        existing.setLastViewedAt(LocalDateTime.now().minusDays(1));
+        existing.setLastViewedAt(Instant.now().minus(1, ChronoUnit.DAYS));
 
         when(lessonRepository.findById(1000L)).thenReturn(Optional.of(lesson));
         when(courseAuthorizationService.resolveRequester("student@example.com")).thenReturn(student);
@@ -154,7 +155,7 @@ class ProgressServiceTest {
         Course course = Course.builder().id(10L).status(PublicationStatus.PUBLISHED).build();
         Lesson lesson = lesson(1000L);
         LessonCompletion completion = LessonCompletion.newFor(student, lesson);
-        completion.setLastViewedAt(LocalDateTime.now());
+        completion.setLastViewedAt(Instant.now());
 
         when(courseRepository.findById(10L)).thenReturn(Optional.of(course));
         when(courseAuthorizationService.resolveRequester("student@example.com")).thenReturn(student);

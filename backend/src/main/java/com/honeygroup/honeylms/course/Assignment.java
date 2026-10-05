@@ -12,7 +12,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -47,7 +47,7 @@ public class Assignment {
     private String description;
 
     @Column(name = "due_date")
-    private LocalDateTime dueDate;
+    private Instant dueDate;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 30)
@@ -55,9 +55,9 @@ public class Assignment {
 
     @CreatedDate
     @Column(name = "created_at", nullable = false, updatable = false)
-    private LocalDateTime createdAt;
+    private Instant createdAt;
 
     @LastModifiedDate
     @Column(name = "updated_at", nullable = false)
-    private LocalDateTime updatedAt;
+    private Instant updatedAt;
 }

@@ -1,10 +1,10 @@
 package com.honeygroup.honeylms.progress.dto;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 public record LessonCompletionDetail(
         Long lessonId,
-        LocalDateTime lastViewedAt,
-        LocalDateTime completedAt
+        Instant lastViewedAt,
+        Instant completedAt
 ) {
 }
