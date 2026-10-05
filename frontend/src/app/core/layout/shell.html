@@ -1,0 +1,32 @@
+<header class="header">
+  <a class="brand" [routerLink]="'/'" aria-label="Honey Group Academy — accueil">
+    <img src="honey-group-logo.png" alt="Honey Group" />
+    <span class="academy">Academy</span>
+  </a>
+
+  <nav class="nav" aria-label="Navigation principale">
+    @for (item of navItems(); track item.path) {
+      <a
+        [routerLink]="item.path"
+        routerLinkActive="active"
+        ariaCurrentWhenActive="page"
+        >{{ item.label }}</a
+      >
+    }
+  </nav>
+
+  @if (user(); as u) {
+    <div class="user">
+      <span class="avatar" aria-hidden="true">{{ initials() }}</span>
+      <div class="identity">
+        <span class="name">{{ u.firstName }} {{ u.lastName }}</span>
+        <span class="role">{{ roleLabel() }}</span>
+      </div>
+      <button mat-stroked-button type="button" (click)="logout()">Déconnexion</button>
+    </div>
+  }
+</header>
+
+<main class="page">
+  <router-outlet />
+</main>

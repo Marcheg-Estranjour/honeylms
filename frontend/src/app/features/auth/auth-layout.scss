@@ -1,0 +1,104 @@
+.auth {
+  display: flex;
+  min-height: 100vh;
+  background: var(--hg-sand);
+}
+
+.brand {
+  width: 580px;
+  flex-shrink: 0;
+  box-sizing: border-box;
+  padding: 56px;
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  overflow: hidden;
+  background: var(--hg-navy);
+  color: #fff;
+}
+
+.logo-box {
+  align-self: flex-start;
+  padding: 22px 28px;
+  border-radius: 20px;
+  background: #fff;
+
+  img {
+    display: block;
+    height: 120px;
+    width: auto;
+  }
+}
+
+.pitch {
+  margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.kicker {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  color: var(--hg-sun);
+}
+
+.headline {
+  margin: 0;
+  font-size: 40px;
+  line-height: 1.15;
+  color: #fff;
+}
+
+.domains {
+  display: flex;
+  gap: 10px;
+  margin: 6px 0 0;
+  padding: 0;
+  list-style: none;
+
+  li {
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 800;
+    background: rgba(255, 255, 255, 0.12);
+  }
+}
+
+.road {
+  margin: 8px -56px 0;
+  border-top: 6px dashed var(--hg-blue);
+  opacity: 0.9;
+}
+
+.content {
+  flex-grow: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 16px;
+}
+
+// Phone / small tablet: the brand panel becomes a slim banner.
+@media (max-width: 900px) {
+  .auth {
+    flex-direction: column;
+  }
+
+  .brand {
+    width: 100%;
+    padding: 20px 16px;
+  }
+
+  .logo-box img {
+    height: 56px;
+  }
+
+  .pitch,
+  .road {
+    display: none;
+  }
+}

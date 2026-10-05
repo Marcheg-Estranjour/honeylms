@@ -1,0 +1,74 @@
+// Shared by the login and register forms.
+.auth-form {
+  width: 100%;
+  max-width: 420px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.intro {
+  margin-bottom: 16px;
+
+  h1 {
+    font-size: 32px;
+  }
+
+  p {
+    margin: 8px 0 0;
+    font-size: 15px;
+    color: var(--hg-muted);
+  }
+}
+
+.row {
+  display: flex;
+  gap: 12px;
+
+  mat-form-field {
+    flex: 1;
+    min-width: 0;
+  }
+}
+
+.alert {
+  margin: 0 0 8px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 600;
+
+  &.error {
+    background: #fdecea;
+    color: #8a1c12;
+  }
+
+  &.success {
+    background: #e3f4e1;
+    color: #1f6a2b;
+  }
+}
+
+.submit {
+  height: 50px;
+  font-size: 16px;
+}
+
+.switch {
+  margin: 8px 0 0;
+  font-size: 14px;
+  text-align: center;
+  color: var(--hg-muted);
+
+  a {
+    font-weight: 800;
+    color: #1152c4;
+  }
+}
+
+@media (max-width: 480px) {
+  .row {
+    flex-direction: column;
+    gap: 0;
+  }
+}
