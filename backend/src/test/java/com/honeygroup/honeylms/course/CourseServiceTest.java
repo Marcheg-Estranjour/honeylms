@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -33,9 +34,6 @@ class CourseServiceTest {
 
     @Mock
     private CourseRepository courseRepository;
-
-    @Mock
-    private CourseTrainerRepository courseTrainerRepository;
 
     @Mock
     private CourseAuthorizationService courseAuthorizationService;
@@ -71,21 +69,52 @@ class CourseServiceTest {
     }
 
     @Test
-    void createCourse_savesAsDraftAndRegistersTrainer_whenRequesterIsTrainer() {
-        UserAccount trainer = trainer(1L);
+    void createCourse_savesAsDraft_whenRequesterIsAdmin() {
+        UserAccount admin = UserAccount.builder().id(99L).email("admin@example.com")
+                .role(new Role(3L, "ADMIN", "Admin")).build();
         CreateCourseRequest request = new CreateCourseRequest("Anglais", "desc", CourseCategory.LANGUAGES);
 
-        when(courseAuthorizationService.resolveRequester("trainer1@example.com")).thenReturn(trainer);
+        when(courseAuthorizationService.resolveRequester("admin@example.com")).thenReturn(admin);
         when(courseRepository.save(any(Course.class))).thenAnswer(inv -> {
             Course c = inv.getArgument(0);
             c.setId(10L);
             return c;
         });
 
-        CourseDetail result = courseService.createCourse(request, "trainer1@example.com");
+        CourseDetail result = courseService.createCourse(request, "admin@example.com");
 
         assertThat(result.status()).isEqualTo("DRAFT");
-        verify(courseTrainerRepository).save(any(CourseTrainer.class));
+        assertThat(result.createdByUserId()).isEqualTo(99L);
+        verify(courseAuthorizationService).assertAdmin(admin);
+    }
+
+    @Test
+    void createCourse_propagatesForbidden_andSavesNothing_whenRequesterIsNotAdmin() {
+        UserAccount trainer = trainer(1L);
+        CreateCourseRequest request = new CreateCourseRequest("Anglais", "desc", CourseCategory.LANGUAGES);
+
+        when(courseAuthorizationService.resolveRequester("trainer1@example.com")).thenReturn(trainer);
+        doThrow(new ForbiddenActionException("Only an Admin can perform this action"))
+                .when(courseAuthorizationService).assertAdmin(trainer);
+
+        assertThatThrownBy(() -> courseService.createCourse(request, "trainer1@example.com"))
+                .isInstanceOf(ForbiddenActionException.class);
+        verify(courseRepository, never()).save(any());
+    }
+
+    @Test
+    void unpublishCourse_setsStatusBackToDraft() {
+        UserAccount trainer = trainer(1L);
+        Course existing = course(10L, PublicationStatus.PUBLISHED, trainer);
+
+        when(courseRepository.findById(10L)).thenReturn(Optional.of(existing));
+        when(courseAuthorizationService.resolveRequester("trainer1@example.com")).thenReturn(trainer);
+        when(courseRepository.save(any(Course.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        CourseDetail result = courseService.unpublishCourse(10L, "trainer1@example.com");
+
+        assertThat(result.status()).isEqualTo("DRAFT");
+        verify(courseAuthorizationService).assertCanManageCourse(existing, trainer);
     }
 
     @Test

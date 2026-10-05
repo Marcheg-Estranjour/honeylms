@@ -52,7 +52,7 @@ public class CourseController {
     }
 
     /**
-     * US-COURSE-03 — Create course. TRAINER or ADMIN only (see SecurityConfig).
+     * US-COURSE-03 — Create course. ADMIN only (see SecurityConfig).
      */
     @PostMapping
     public ResponseEntity<CourseDetail> createCourse(@Valid @RequestBody CreateCourseRequest request,
@@ -78,6 +78,12 @@ public class CourseController {
     @PatchMapping("/{courseId}/publish")
     public ResponseEntity<CourseDetail> publishCourse(@PathVariable Long courseId, Authentication authentication) {
         return ResponseEntity.ok(courseService.publishCourse(courseId, authentication.getName()));
+    }
+
+    /** US-COURSE-06 — Unpublish course. Same authorization rule as publish. */
+    @PatchMapping("/{courseId}/unpublish")
+    public ResponseEntity<CourseDetail> unpublishCourse(@PathVariable Long courseId, Authentication authentication) {
+        return ResponseEntity.ok(courseService.unpublishCourse(courseId, authentication.getName()));
     }
 
     private boolean isRealUser(Authentication authentication) {
