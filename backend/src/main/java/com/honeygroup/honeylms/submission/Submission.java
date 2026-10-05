@@ -16,7 +16,7 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -58,7 +58,7 @@ public class Submission {
     private StoredFile storedFile;
 
     @Column(name = "submitted_at", nullable = false)
-    private LocalDateTime submittedAt;
+    private Instant submittedAt;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 30)
@@ -74,13 +74,13 @@ public class Submission {
     private UserAccount correctedBy;
 
     @Column(name = "corrected_at")
-    private LocalDateTime correctedAt;
+    private Instant correctedAt;
 
     @CreatedDate
     @Column(name = "created_at", nullable = false, updatable = false)
-    private LocalDateTime createdAt;
+    private Instant createdAt;
 
     @LastModifiedDate
     @Column(name = "updated_at", nullable = false)
-    private LocalDateTime updatedAt;
+    private Instant updatedAt;
 }

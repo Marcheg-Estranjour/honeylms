@@ -10,7 +10,7 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.MapsId;
 import jakarta.persistence.Table;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -42,14 +42,14 @@ public class Enrollment {
     private Course course;
 
     @Column(name = "enrolled_at", nullable = false, updatable = false)
-    private LocalDateTime enrolledAt;
+    private Instant enrolledAt;
 
     public static Enrollment of(UserAccount student, Course course) {
         Enrollment enrollment = new Enrollment();
         enrollment.setId(new EnrollmentId(student.getId(), course.getId()));
         enrollment.setStudent(student);
         enrollment.setCourse(course);
-        enrollment.setEnrolledAt(LocalDateTime.now());
+        enrollment.setEnrolledAt(Instant.now());
         return enrollment;
     }
 }

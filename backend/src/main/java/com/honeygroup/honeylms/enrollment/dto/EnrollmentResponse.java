@@ -1,9 +1,9 @@
 package com.honeygroup.honeylms.enrollment.dto;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 public record EnrollmentResponse(
         Long courseId,
-        LocalDateTime enrolledAt
+        Instant enrolledAt
 ) {
 }

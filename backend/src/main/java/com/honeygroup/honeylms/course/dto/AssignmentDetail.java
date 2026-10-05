@@ -1,6 +1,6 @@
 package com.honeygroup.honeylms.course.dto;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.List;
 
 public record AssignmentDetail(
@@ -8,7 +8,7 @@ public record AssignmentDetail(
         Long lessonId,
         String title,
         String description,
-        LocalDateTime dueDate,
+        Instant dueDate,
         String status,
         List<AttachedFileSummary> files
 ) {

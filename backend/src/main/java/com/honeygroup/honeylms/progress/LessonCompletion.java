@@ -10,7 +10,7 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.MapsId;
 import jakarta.persistence.Table;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -47,10 +47,10 @@ public class LessonCompletion {
     private Lesson lesson;
 
     @Column(name = "completed_at")
-    private LocalDateTime completedAt;
+    private Instant completedAt;
 
     @Column(name = "last_viewed_at")
-    private LocalDateTime lastViewedAt;
+    private Instant lastViewedAt;
 
     public static LessonCompletion newFor(UserAccount student, Lesson lesson) {
         LessonCompletion completion = new LessonCompletion();

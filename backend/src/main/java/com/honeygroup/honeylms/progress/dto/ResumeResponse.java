@@ -1,10 +1,10 @@
 package com.honeygroup.honeylms.progress.dto;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 public record ResumeResponse(
         Long lessonId,
         Long moduleId,
-        LocalDateTime lastViewedAt
+        Instant lastViewedAt
 ) {
 }

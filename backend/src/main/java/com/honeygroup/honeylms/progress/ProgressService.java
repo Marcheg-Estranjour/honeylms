@@ -16,7 +16,7 @@ import com.honeygroup.honeylms.progress.dto.LessonCompletionDetail;
 import com.honeygroup.honeylms.progress.dto.ModuleProgress;
 import com.honeygroup.honeylms.progress.dto.ResumeResponse;
 import com.honeygroup.honeylms.user.UserAccount;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.List;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
@@ -54,7 +54,7 @@ public class ProgressService {
         learningAccessService.assertStudentCanAccessLesson(lesson, student);
 
         LessonCompletion completion = findOrCreate(student, lesson);
-        completion.setLastViewedAt(LocalDateTime.now());
+        completion.setLastViewedAt(Instant.now());
         return toDetail(completionRepository.save(completion));
     }
 
@@ -66,7 +66,7 @@ public class ProgressService {
         learningAccessService.assertStudentCanAccessLesson(lesson, student);
 
         LessonCompletion completion = findOrCreate(student, lesson);
-        LocalDateTime now = LocalDateTime.now();
+        Instant now = Instant.now();
         completion.setLastViewedAt(now);
         completion.setCompletedAt(now);
         return toDetail(completionRepository.save(completion));
