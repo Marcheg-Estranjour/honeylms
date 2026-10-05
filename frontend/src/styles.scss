@@ -1,12 +1,8 @@
 @use '@angular/material' as mat;
 @use './theme-colors' as brand;
 
-// Self-hosted fonts (RGPD: no request to Google Fonts)
-//@use '@fontsource/nunito-sans/400.css';
-//@use '@fontsource/nunito-sans/600.css';
-//@use '@fontsource/nunito-sans/700.css';
-//@use '@fontsource/nunito-sans/800.css';
-//@use '@fontsource/young-serif/400.css';
+// Fonts are self-hosted via @fontsource, declared in angular.json > build > styles
+// (RGPD: no request to Google Fonts).
 
 html {
   color-scheme: light;
