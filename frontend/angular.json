@@ -31,7 +31,10 @@
             ],
             "styles": [
               "@fontsource/nunito-sans/400.css",
+              "@fontsource/nunito-sans/600.css",
               "@fontsource/nunito-sans/700.css",
+              "@fontsource/nunito-sans/800.css",
+              "@fontsource/young-serif/400.css",
               "src/styles.scss"
             ]
           },
