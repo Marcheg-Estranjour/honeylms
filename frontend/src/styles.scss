@@ -1,0 +1,58 @@
+@use '@angular/material' as mat;
+@use './theme-colors' as brand;
+
+// Self-hosted fonts (RGPD: no request to Google Fonts)
+//@use '@fontsource/nunito-sans/400.css';
+//@use '@fontsource/nunito-sans/600.css';
+//@use '@fontsource/nunito-sans/700.css';
+//@use '@fontsource/nunito-sans/800.css';
+//@use '@fontsource/young-serif/400.css';
+
+html {
+  color-scheme: light;
+  @include mat.theme((
+    color: (
+      primary: brand.$primary-palette,
+      tertiary: brand.$tertiary-palette,
+    ),
+    typography: (
+      plain-family: ('Nunito Sans', system-ui, sans-serif),
+      brand-family: ('Young Serif', Georgia, serif),
+    ),
+    density: 0,
+  ));
+
+  // Honey Group brand tokens (from the mock-ups)
+  --hg-blue: #1766e8;        // brand blue, progress bars
+  --hg-blue-action: #1459d1; // primary actions (white text: 6.2:1)
+  --hg-navy: #0d2350;        // headings, strong backgrounds
+  --hg-orange: #ee7420;      // secondary CTA: navy text only (5.2:1), never white text (2.9:1)
+  --hg-orange-text: #b8530a; // orange text on white (4.9:1), e.g. "ACADEMY"
+  --hg-sun: #f6c21b;         // highlights, active nav underline, progress on navy
+  --hg-success: #2e8b3e;     // completed state
+  --hg-sand: #fbf8f2;        // page background
+  --hg-text: #243049;        // body text
+  --hg-muted: #5b6478;       // secondary text (5.6:1 on sand)
+  --hg-border: #e6e1d6;      // card borders
+
+  // Category colors (catalogue tags)
+  --hg-cat-languages-bg: #e6effd;  --hg-cat-languages-fg: #0f4ab0;
+  --hg-cat-office-bg: #fdeee2;     --hg-cat-office-fg: #9a4308;
+  --hg-cat-eductour-bg: #e3f4e1;   --hg-cat-eductour-fg: #23702f;
+
+  --mat-sys-surface: var(--hg-sand);
+}
+
+body {
+  margin: 0;
+  font-family: 'Nunito Sans', system-ui, sans-serif;
+  color: var(--hg-text);
+  background: var(--hg-sand);
+}
+
+h1, h2, .hg-serif {
+  font-family: 'Young Serif', Georgia, serif;
+  font-weight: 400;
+  color: var(--hg-navy);
+  margin: 0;
+}
