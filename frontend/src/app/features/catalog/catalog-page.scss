@@ -1,0 +1,152 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+.head {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 16px;
+}
+
+.lead {
+  margin: 8px 0 0;
+  font-size: 16px;
+  color: var(--hg-muted);
+}
+
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.chip {
+  height: 36px;
+  padding: 0 16px;
+  border: 1px solid #d8d2c4;
+  border-radius: 999px;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--hg-text);
+  background: #fff;
+  cursor: pointer;
+
+  &.on {
+    color: #fff;
+    background: var(--hg-navy);
+    border-color: var(--hg-navy);
+  }
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.section-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--cat-accent);
+}
+
+.count {
+  margin-left: auto;
+  font-size: 13px;
+  color: var(--hg-muted);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 20px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.card {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid var(--hg-border);
+  border-radius: 16px;
+  background: #fff;
+  color: var(--hg-text);
+  text-decoration: none;
+  box-shadow: 0 1px 2px rgba(13, 35, 80, 0.06);
+
+  &:hover,
+  &:focus-visible {
+    border-color: var(--cat-accent);
+  }
+}
+
+.thumb {
+  height: 120px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--cat-accent);
+  background: var(--cat-thumb);
+}
+
+.body {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 16px 18px 18px;
+
+  h3 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 800;
+    line-height: 1.3;
+    color: var(--hg-navy);
+  }
+}
+
+.desc {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.45;
+  color: var(--hg-muted);
+}
+
+.foot {
+  margin-top: auto;
+  padding-top: 6px;
+}
+
+.discover {
+  font-size: 14px;
+  font-weight: 800;
+  color: #1152c4;
+}
+
+.message {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+  color: var(--hg-muted);
+
+  p {
+    margin: 0;
+  }
+}

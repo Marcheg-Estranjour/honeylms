@@ -31,11 +31,6 @@ html {
   --hg-muted: #5b6478;       // secondary text (5.6:1 on sand)
   --hg-border: #e6e1d6;      // card borders
 
-  // Category colors (catalogue tags)
-  --hg-cat-languages-bg: #e6effd;  --hg-cat-languages-fg: #0f4ab0;
-  --hg-cat-office-bg: #fdeee2;     --hg-cat-office-fg: #9a4308;
-  --hg-cat-eductour-bg: #e3f4e1;   --hg-cat-eductour-fg: #23702f;
-
   --mat-sys-surface: var(--hg-sand);
 }
 
@@ -51,4 +46,46 @@ h1, h2, .hg-serif {
   font-weight: 400;
   color: var(--hg-navy);
   margin: 0;
+}
+
+// Domain colors (mock-ups). Put the class on an element, then use the variables inside it:
+// --cat-fg (text, AA on --cat-bg), --cat-bg (tag), --cat-thumb (card thumbnail), --cat-accent (icon, dot).
+.cat-languages {
+  --cat-fg: #0f4ab0;
+  --cat-bg: #e6effd;
+  --cat-thumb: #dce8fc;
+  --cat-accent: #1459d1;
+}
+
+.cat-office {
+  --cat-fg: #9a4308;
+  --cat-bg: #fdeee2;
+  --cat-thumb: #fce6d3;
+  --cat-accent: #c35e12;
+}
+
+.cat-eductour {
+  --cat-fg: #23702f;
+  --cat-bg: #e3f4e1;
+  --cat-thumb: #ddf1d9;
+  --cat-accent: #2e8b3e;
+}
+
+// Pill-shaped tag (domain, status...).
+.hg-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 800;
+  white-space: nowrap;
+  color: var(--cat-fg, var(--hg-text));
+  background: var(--cat-bg, #eeebe4);
+
+  &.success {
+    color: #1f6a2b;
+    background: #e3f4e1;
+  }
 }

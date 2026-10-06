@@ -1,0 +1,83 @@
+<div class="head">
+  <div>
+    <h1>Catalogue des formations</h1>
+    <p class="lead">Choisissez un cours et inscrivez-vous pour accéder aux leçons.</p>
+  </div>
+
+  <div class="filters" role="group" aria-label="Filtrer par domaine">
+    <button type="button" class="chip" [class.on]="filter() === null" [attr.aria-pressed]="filter() === null" (click)="select(null)">
+      Tous
+    </button>
+    @for (category of categories; track category.code) {
+      <button
+        type="button"
+        class="chip"
+        [class.on]="filter() === category.code"
+        [attr.aria-pressed]="filter() === category.code"
+        (click)="select(category.code)"
+      >
+        {{ category.label }}
+      </button>
+    }
+  </div>
+</div>
+
+@switch (state()) {
+  @case ('loading') {
+    <p class="message" role="status">Chargement du catalogue…</p>
+  }
+  @case ('error') {
+    <div class="message" role="alert">
+      <p>Le catalogue n'a pas pu être chargé.</p>
+      <button mat-stroked-button type="button" (click)="load()">Réessayer</button>
+    </div>
+  }
+  @case ('ready') {
+    @for (section of sections(); track section.category.code) {
+      <section class="section" [class]="section.category.cssClass" [attr.aria-labelledby]="'title-' + section.category.code">
+        <div class="section-head">
+          <span class="dot" aria-hidden="true"></span>
+          <h2 [id]="'title-' + section.category.code">{{ section.category.label }}</h2>
+          <span class="count">{{ section.courses.length }} cours</span>
+        </div>
+
+        <ul class="grid">
+          @for (course of section.courses; track course.id) {
+            <li>
+              <a class="card" [routerLink]="['/courses', course.id]">
+                <div class="thumb">
+                  <app-category-icon [category]="course.category" />
+                </div>
+                <div class="body">
+                  <span class="hg-tag">{{ section.category.label }}</span>
+                  <h3>{{ course.title }}</h3>
+                  @if (course.description) {
+                    <p class="desc">{{ course.description }}</p>
+                  }
+                  <div class="foot">
+                    @if (enrolledIds().has(course.id)) {
+                      <span class="hg-tag success">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5L20 7" /></svg>
+                        Inscrit
+                      </span>
+                    } @else {
+                      <span class="discover">Découvrir <span aria-hidden="true">→</span></span>
+                    }
+                  </div>
+                </div>
+              </a>
+            </li>
+          }
+        </ul>
+      </section>
+    } @empty {
+      <p class="message">
+        @if (filter() === null) {
+          Aucune formation n'est publiée pour le moment.
+        } @else {
+          Aucune formation dans ce domaine pour le moment.
+        }
+      </p>
+    }
+  }
+}
