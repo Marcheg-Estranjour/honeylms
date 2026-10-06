@@ -38,7 +38,13 @@ export const routes: Routes = [
       { path: '', pathMatch: 'full', redirectTo: () => inject(AuthService).homeUrl() },
 
       // Student
-      { path: 'catalog', canActivate: [roleGuard('STUDENT')], ...comingSoon('Catalogue des formations', 'S8') },
+      {
+        path: 'catalog',
+        canActivate: [roleGuard('STUDENT')],
+        loadComponent: () => import('./features/catalog/catalog-page').then((m) => m.CatalogPage),
+        title: 'Catalogue' + TITLE_SUFFIX,
+      },
+      { path: 'courses/:courseId', canActivate: [roleGuard('STUDENT')], ...comingSoon('Détail du cours', 'S8') },
       { path: 'my-courses', canActivate: [roleGuard('STUDENT')], ...comingSoon('Mes cours', 'S8') },
 
       // Trainer
