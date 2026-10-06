@@ -37,4 +37,12 @@ describe('CatalogService & EnrollmentService', () => {
     TestBed.inject(EnrollmentService).getMyCourses().subscribe();
     http.expectOne('/api/me/courses').flush([]);
   });
+
+  it('enrolls with a POST without body', () => {
+    TestBed.inject(EnrollmentService).enroll(4).subscribe();
+    const req = http.expectOne('/api/courses/4/enrollment');
+    expect(req.request.method).toBe('POST');
+    expect(req.request.body).toBeNull();
+    req.flush({ courseId: 4, enrolledAt: '2026-10-06T10:00:00Z' });
+  });
 });
