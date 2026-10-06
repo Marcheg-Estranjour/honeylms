@@ -1,0 +1,89 @@
+<div class="head">
+  @if (firstName()) {
+    <p class="kicker">BONJOUR {{ firstName().toUpperCase() }}</p>
+  }
+  <h1>Mes cours</h1>
+</div>
+
+@switch (state()) {
+  @case ('loading') {
+    <p class="muted" role="status">Chargement de vos cours…</p>
+  }
+  @case ('error') {
+    <div class="muted" role="alert">
+      <p>Vos cours n'ont pas pu être chargés.</p>
+      <button mat-stroked-button type="button" (click)="load()">Réessayer</button>
+    </div>
+  }
+  @case ('ready') {
+    @if (banner(); as b) {
+      <section class="resume" aria-labelledby="resume-title" [class]="b.card.category.cssClass">
+        <div class="resume-thumb">
+          <app-category-icon [category]="b.card.course.category" />
+        </div>
+        <div class="resume-body">
+          <p class="resume-kicker">REPRENDRE LÀ OÙ VOUS EN ÉTIEZ</p>
+          <h2 id="resume-title" class="hg-serif">{{ b.card.course.title }}</h2>
+          @if (b.location) {
+            <p class="resume-location">{{ b.location }}</p>
+          }
+          @if (b.card.progress; as p) {
+            <div class="progress on-dark">
+              <div class="bar" role="progressbar" aria-label="Progression du cours" [attr.aria-valuenow]="p.percentage" aria-valuemin="0" aria-valuemax="100">
+                <i [style.width.%]="p.percentage"></i>
+              </div>
+              <strong>{{ p.percentage }} %</strong>
+            </div>
+          }
+        </div>
+        <a class="resume-cta" [routerLink]="['/courses', b.card.course.courseId, 'learn']">Reprendre</a>
+      </section>
+    }
+
+    <ul class="grid">
+      @for (card of cards(); track card.course.courseId) {
+        <li class="card" [class]="card.category.cssClass">
+          <div class="thumb">
+            <app-category-icon [category]="card.course.category" />
+          </div>
+          <div class="body">
+            <span class="hg-tag">{{ card.category.label }}</span>
+            <h3>{{ card.course.title }}</h3>
+            @if (card.progress; as p) {
+              <p class="count">
+                @if (p.accessibleLessons === 0) {
+                  Aucune leçon publiée pour le moment
+                } @else if (p.percentage >= 100) {
+                  Toutes les leçons terminées
+                } @else if (p.completedLessons === 0) {
+                  {{ p.accessibleLessons }} {{ p.accessibleLessons > 1 ? 'leçons' : 'leçon' }} à découvrir
+                } @else {
+                  {{ p.completedLessons }} {{ p.completedLessons > 1 ? 'leçons' : 'leçon' }} sur {{ p.accessibleLessons }} terminée{{ p.completedLessons > 1 ? 's' : '' }}
+                }
+              </p>
+              <div class="progress" [class.done]="p.percentage >= 100">
+                <div class="bar" role="progressbar" [attr.aria-label]="'Progression : ' + card.course.title" [attr.aria-valuenow]="p.percentage" aria-valuemin="0" aria-valuemax="100">
+                  <i [style.width.%]="p.percentage"></i>
+                </div>
+                <strong>{{ p.percentage }} %</strong>
+              </div>
+            } @else {
+              <p class="count">Progression indisponible</p>
+            }
+            <a mat-stroked-button class="action" [routerLink]="['/courses', card.course.courseId, 'learn']">
+              {{ actionLabel(card) }}
+            </a>
+          </div>
+        </li>
+      }
+      <li class="more">
+        @if (cards().length === 0) {
+          <span class="hg-serif">Vous n'êtes inscrit à aucun cours.</span>
+        } @else {
+          <span class="hg-serif">Envie d'aller plus loin ?</span>
+        }
+        <a mat-stroked-button routerLink="/catalog">Voir le catalogue</a>
+      </li>
+    </ul>
+  }
+}
