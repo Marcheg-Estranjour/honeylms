@@ -1,0 +1,210 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  gap: 26px;
+}
+
+.kicker,
+.resume-kicker {
+  margin: 0 0 6px;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  color: var(--hg-orange-text);
+}
+
+// ---- Resume banner (mock-up « Mes cours ») ----
+.resume {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 28px;
+  padding: 26px 30px;
+  border-radius: 20px;
+  color: #fff;
+  background: var(--hg-navy);
+}
+
+.resume-thumb {
+  width: 180px;
+  height: 108px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 14px;
+  color: var(--cat-accent);
+  background: var(--cat-thumb);
+}
+
+.resume-body {
+  flex: 1 1 280px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+
+  h2 {
+    font-size: 24px;
+    color: #fff;
+  }
+}
+
+.resume-kicker {
+  margin: 0;
+  font-size: 12px;
+  color: var(--hg-sun);
+}
+
+.resume-location {
+  margin: 0;
+  font-size: 15px;
+  color: #c9d4ea;
+}
+
+// Orange CTA with NAVY text: white on orange is only 2.9:1 (WCAG AA fails).
+.resume-cta {
+  display: inline-flex;
+  align-items: center;
+  height: 50px;
+  padding: 0 28px;
+  border-radius: 999px;
+  font-size: 16px;
+  font-weight: 800;
+  text-decoration: none;
+  color: var(--hg-navy);
+  background: var(--hg-orange);
+}
+
+// ---- Progress bar ----
+.progress {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  max-width: 520px;
+
+  strong {
+    font-size: 13px;
+    color: var(--hg-navy);
+  }
+
+  &.on-dark strong {
+    font-size: 14px;
+    color: #fff;
+  }
+}
+
+.bar {
+  flex-grow: 1;
+  height: 8px;
+  overflow: hidden;
+  border-radius: 4px;
+  background: #e9e4d8;
+
+  i {
+    display: block;
+    height: 100%;
+    border-radius: 4px;
+    background: var(--hg-blue);
+  }
+}
+
+.on-dark .bar {
+  background: rgba(255, 255, 255, 0.18);
+
+  i {
+    background: var(--hg-sun);
+  }
+}
+
+.done .bar i {
+  background: var(--hg-success);
+}
+
+// ---- Course cards ----
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 20px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid var(--hg-border);
+  border-radius: 16px;
+  background: #fff;
+}
+
+.thumb {
+  height: 96px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--cat-accent);
+  background: var(--cat-thumb);
+}
+
+.body {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 16px 18px 18px;
+
+  h3 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 800;
+    color: var(--hg-navy);
+  }
+
+  .progress {
+    align-self: stretch;
+  }
+}
+
+.count {
+  margin: 0;
+  font-size: 13px;
+  color: var(--hg-muted);
+}
+
+.action {
+  align-self: stretch;
+  margin-top: auto;
+}
+
+.more {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  min-height: 200px;
+  padding: 20px;
+  border: 2px dashed #d8d2c4;
+  border-radius: 16px;
+  text-align: center;
+
+  span {
+    font-size: 18px;
+    color: var(--hg-navy);
+  }
+}
+
+.muted {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+  color: var(--hg-muted);
+
+  p {
+    margin: 0;
+  }
+}
