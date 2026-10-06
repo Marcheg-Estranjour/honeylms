@@ -1,0 +1,67 @@
+@switch (state()) {
+  @case ('loading') {
+    <p class="muted" role="status">Chargement du cours…</p>
+  }
+  @case ('error') {
+    <div class="muted" role="alert">
+      <p>{{ loadError() }}</p>
+      <a mat-stroked-button routerLink="/catalog">Retour au catalogue</a>
+    </div>
+  }
+  @case ('ready') {
+    @if (course(); as c) {
+      <div class="page" [class]="category()!.cssClass">
+        <nav class="crumbs" aria-label="Fil d'Ariane">
+          <a routerLink="/catalog">Catalogue</a>
+          <span aria-hidden="true">/</span>
+          <span>{{ category()!.label }}</span>
+          <span aria-hidden="true">/</span>
+          <span aria-current="page">{{ c.title }}</span>
+        </nav>
+
+        <div class="layout">
+          <div class="main">
+            <span class="hg-tag">{{ category()!.label }}</span>
+            <h1>{{ c.title }}</h1>
+            @if (c.description) {
+              <p class="desc">{{ c.description }}</p>
+            }
+
+            <section class="program" aria-labelledby="program-title">
+              <h2 id="program-title">Programme du cours</h2>
+              @if (enrolledAt()) {
+                <p>Les modules et leçons sont accessibles depuis l'espace du cours.</p>
+              } @else {
+                <p>Les modules et leçons sont visibles après inscription.</p>
+              }
+            </section>
+          </div>
+
+          <aside class="card">
+            <div class="thumb">
+              <app-category-icon [category]="c.category" [size]="56" />
+            </div>
+            <div class="actions">
+              @if (justEnrolled()) {
+                <p class="alert success" role="status">Inscription confirmée, bienvenue dans ce cours !</p>
+              }
+              @if (enrollError(); as message) {
+                <p class="alert error" role="alert">{{ message }}</p>
+              }
+
+              @if (enrolledAt(); as date) {
+                <a mat-flat-button class="cta" [routerLink]="['/courses', c.id, 'learn']">Accéder au cours</a>
+                <p class="note">Inscrit depuis le {{ date | date: 'longDate' }}</p>
+              } @else {
+                <button mat-flat-button class="cta" type="button" [disabled]="enrolling()" (click)="enroll()">
+                  {{ enrolling() ? 'Inscription…' : "S'inscrire à ce cours" }}
+                </button>
+                <p class="note">Inscription gratuite, accès immédiat aux leçons publiées.</p>
+              }
+            </div>
+          </aside>
+        </div>
+      </div>
+    }
+  }
+}

@@ -30,3 +30,9 @@ export interface EnrolledCourse {
   category: CourseCategory;
   enrolledAt: string;
 }
+
+/** Backend record `EnrollmentResponse` — POST /api/courses/{id}/enrollment. */
+export interface EnrollmentResponse {
+  courseId: number;
+  enrolledAt: string;
+}

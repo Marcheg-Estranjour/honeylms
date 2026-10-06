@@ -44,7 +44,15 @@ export const routes: Routes = [
         loadComponent: () => import('./features/catalog/catalog-page').then((m) => m.CatalogPage),
         title: 'Catalogue' + TITLE_SUFFIX,
       },
-      { path: 'courses/:courseId', canActivate: [roleGuard('STUDENT')], ...comingSoon('Détail du cours', 'S8') },
+      {
+        path: 'courses/:courseId',
+        canActivate: [roleGuard('STUDENT')],
+        loadComponent: () =>
+          import('./features/catalog/course-detail-page').then((m) => m.CourseDetailPage),
+        title: 'Détail du cours' + TITLE_SUFFIX,
+      },
+      // Entry point of a course for an enrolled student (resume point / first lesson) — S9.
+      { path: 'courses/:courseId/learn', canActivate: [roleGuard('STUDENT')], ...comingSoon('Suivre le cours', 'S9') },
       { path: 'my-courses', canActivate: [roleGuard('STUDENT')], ...comingSoon('Mes cours', 'S8') },
 
       // Trainer
