@@ -28,6 +28,8 @@ services:
       SPRING_DATASOURCE_USERNAME: honeylms
       SPRING_DATASOURCE_PASSWORD: honeylms
       STORAGE_LOCATION: /data/uploads
+      # Local environment = profile "dev" (loads the demo seed). Override with SPRING_PROFILES_ACTIVE=.
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-dev}
     ports:
       - "8080:8080"
     volumes:
