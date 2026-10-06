@@ -1,0 +1,5 @@
+# Profile "dev" — local development and demo only. NEVER enable it in production.
+# Adds the demo data (db/seed) on top of the schema migrations.
+spring:
+  flyway:
+    locations: classpath:db/migration,classpath:db/seed
