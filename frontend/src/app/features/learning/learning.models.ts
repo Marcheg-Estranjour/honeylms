@@ -110,4 +110,8 @@ export interface SubmissionDetail {
   originalFileName: string;
   mimeType: string;
   sizeBytes: number;
+  /** « Camille Martin » (gap G10). */
+  studentName: string;
+  /** Trainer who corrected it, null while not corrected (gap G10). */
+  correctedByName: string | null;
 }

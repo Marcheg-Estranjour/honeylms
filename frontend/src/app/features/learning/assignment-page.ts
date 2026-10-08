@@ -45,9 +45,7 @@ interface StatusTag {
  *   CHOIX TECHNIQUE : inline confirmation instead of window.confirm (accessible, testable, styled).
  * - The deadline is checked here for display only (hide the upload zone); the backend refuses
  *   any upload after the deadline (403) and stays the authority.
- * - HYPOTHÈSE : the « Corrigé par [formateur] » of the wireframe needs the trainer's name, which
- *   SubmissionDetail does not carry (only correctedByUserId). Shown as « Corrigé le … » until
- *   the DTO is extended (planned with gap G10, S9-5).
+ * - « Corrigé par [formateur] le … » uses SubmissionDetail.correctedByName (gap G10, S9-5).
  */
 @Component({
   selector: 'app-assignment-page',
