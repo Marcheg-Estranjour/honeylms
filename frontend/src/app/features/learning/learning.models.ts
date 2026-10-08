@@ -43,3 +43,16 @@ export interface ResumePoint {
   moduleId: number;
   lastViewedAt: string;
 }
+
+/** Backend record `CourseCompletions` — GET /api/courses/{id}/completions (gap G1). */
+export interface CourseCompletions {
+  courseId: number;
+  completedLessonIds: number[];
+}
+
+/** Backend record `LessonCompletionDetail` — PUT /view and POST /completion. */
+export interface LessonCompletionDetail {
+  lessonId: number;
+  lastViewedAt: string | null;
+  completedAt: string | null;
+}

@@ -1,7 +1,14 @@
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { catchError, Observable, of, throwError } from 'rxjs';
-import { CourseProgress, LessonDetail, ModuleDetail, ResumePoint } from './learning.models';
+import {
+  CourseCompletions,
+  CourseProgress,
+  LessonCompletionDetail,
+  LessonDetail,
+  ModuleDetail,
+  ResumePoint,
+} from './learning.models';
 
 /**
  * Student side of the learning API: modules, lessons, progress, resume point.
@@ -10,6 +17,16 @@ import { CourseProgress, LessonDetail, ModuleDetail, ResumePoint } from './learn
 @Injectable({ providedIn: 'root' })
 export class LearningService {
   private readonly http = inject(HttpClient);
+
+  /** Published modules of the course, in display order (the backend filters for students). */
+  listModules(courseId: number): Observable<ModuleDetail[]> {
+    return this.http.get<ModuleDetail[]>(`/api/courses/${courseId}/modules`);
+  }
+
+  /** Published lessons of the module, in display order (the backend filters for students). */
+  listLessons(moduleId: number): Observable<LessonDetail[]> {
+    return this.http.get<LessonDetail[]>(`/api/modules/${moduleId}/lessons`);
+  }
 
   getModule(moduleId: number): Observable<ModuleDetail> {
     return this.http.get<ModuleDetail>(`/api/modules/${moduleId}`);
@@ -21,6 +38,21 @@ export class LearningService {
 
   getCourseProgress(courseId: number): Observable<CourseProgress> {
     return this.http.get<CourseProgress>(`/api/courses/${courseId}/progress`);
+  }
+
+  /** Ids of the accessible lessons already completed (gap G1). */
+  getCompletions(courseId: number): Observable<CourseCompletions> {
+    return this.http.get<CourseCompletions>(`/api/courses/${courseId}/completions`);
+  }
+
+  /** Records the visit (updates last_viewed_at, used by the resume point). No body. */
+  recordView(lessonId: number): Observable<LessonCompletionDetail> {
+    return this.http.put<LessonCompletionDetail>(`/api/lessons/${lessonId}/view`, null);
+  }
+
+  /** US-PROGRESS-01 — marks the lesson as completed. No body. */
+  markCompleted(lessonId: number): Observable<LessonCompletionDetail> {
+    return this.http.post<LessonCompletionDetail>(`/api/lessons/${lessonId}/completion`, null);
   }
 
   /** Last lesson viewed in the course, or null when the student has not opened any lesson yet (404). */

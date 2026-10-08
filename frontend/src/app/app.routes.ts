@@ -51,8 +51,19 @@ export const routes: Routes = [
           import('./features/catalog/course-detail-page').then((m) => m.CourseDetailPage),
         title: 'Détail du cours' + TITLE_SUFFIX,
       },
-      // Entry point of a course for an enrolled student (resume point / first lesson) — S9.
-      { path: 'courses/:courseId/learn', canActivate: [roleGuard('STUDENT')], ...comingSoon('Suivre le cours', 'S9') },
+      // Entry point of a course for an enrolled student: resume point, else first lesson.
+      {
+        path: 'courses/:courseId/learn',
+        canActivate: [roleGuard('STUDENT')],
+        loadComponent: () => import('./features/learning/learn-entry-page').then((m) => m.LearnEntryPage),
+        title: 'Suivre le cours' + TITLE_SUFFIX,
+      },
+      {
+        path: 'courses/:courseId/lessons/:lessonId',
+        canActivate: [roleGuard('STUDENT')],
+        loadComponent: () => import('./features/learning/lesson-page').then((m) => m.LessonPage),
+        title: 'Leçon' + TITLE_SUFFIX,
+      },
       {
         path: 'my-courses',
         canActivate: [roleGuard('STUDENT')],
