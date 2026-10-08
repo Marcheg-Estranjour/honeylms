@@ -1,0 +1,134 @@
+@switch (state()) {
+  @case ('loading') {
+    <p class="muted" role="status">Chargement de la leçon…</p>
+  }
+  @case ('error') {
+    <div class="muted" role="alert">
+      <p>{{ errorMessage() }}</p>
+      <a mat-stroked-button [routerLink]="['/trainer/courses', courseId()]">Retour à la formation</a>
+    </div>
+  }
+  @case ('ready') {
+    @if (lesson(); as l) {
+      <nav class="crumbs" aria-label="Fil d'Ariane">
+        <a routerLink="/trainer/courses">Mes formations</a>
+        <span aria-hidden="true">/</span>
+        <a [routerLink]="['/trainer/courses', courseId()]">{{ courseTitle() ?? 'Formation' }}</a>
+        <span aria-hidden="true">/</span>
+        <span aria-current="page">{{ l.title }}</span>
+      </nav>
+
+      <header class="head">
+        <h1>{{ l.title }}</h1>
+        @if (l.status === 'PUBLISHED') {
+          <span class="hg-tag success">Publiée</span>
+        } @else {
+          <span class="hg-tag warning">Brouillon</span>
+          <button class="publish" mat-stroked-button type="button" [disabled]="busy() !== null" (click)="publish()">
+            {{ busy() === 'publish' ? 'Publication…' : 'Publier la leçon' }}
+          </button>
+        }
+      </header>
+
+      <!-- ===== Lesson ===== -->
+      <section class="card" aria-labelledby="lesson-title">
+        <h2 id="lesson-title">Leçon</h2>
+        <form class="lesson" [formGroup]="lessonForm" (ngSubmit)="save()">
+          <mat-form-field>
+            <mat-label>Titre</mat-label>
+            <input matInput formControlName="title" />
+            @if (lessonForm.controls.title.hasError('required')) {
+              <mat-error>Le titre est obligatoire.</mat-error>
+            }
+          </mat-form-field>
+          <mat-form-field>
+            <mat-label>Description (facultative)</mat-label>
+            <input matInput formControlName="description" />
+          </mat-form-field>
+          <mat-form-field>
+            <mat-label>Contenu</mat-label>
+            <textarea matInput formControlName="content" rows="14"></textarea>
+            <mat-hint>Texte brut : les retours à la ligne sont conservés, le HTML n'est pas interprété.</mat-hint>
+          </mat-form-field>
+
+          @if (lessonNotice(); as message) {
+            <p class="alert ok" role="status">{{ message }}</p>
+          }
+          @if (lessonError(); as message) {
+            <p class="alert error" role="alert">{{ message }}</p>
+          }
+          <button mat-flat-button type="submit" [disabled]="busy() !== null || lessonForm.pristine">
+            {{ busy() === 'save' ? 'Enregistrement…' : 'Enregistrer la leçon' }}
+          </button>
+        </form>
+      </section>
+
+      <!-- ===== Resources ===== -->
+      <section class="card" aria-labelledby="resources-title">
+        <h2 id="resources-title">Ressources</h2>
+        @if (resourceNotice(); as message) {
+          <p class="alert ok" role="status">{{ message }}</p>
+        }
+        @if (resourceError(); as message) {
+          <p class="alert error" role="alert">{{ message }}</p>
+        }
+
+        @if (resources(); as list) {
+          <ul class="files">
+            @for (r of list; track r.id) {
+              <li class="file">
+                <span class="type">{{ fileTypeLabel(r.originalFileName) }}</span>
+                <span class="name">
+                  {{ r.title }}
+                  <span class="meta">{{ r.originalFileName }} · {{ r.sizeBytes | fileSize }}</span>
+                </span>
+                @if (confirmDeleteId() === r.id) {
+                  <span class="confirm" role="group" [attr.aria-label]="'Confirmer la suppression de ' + r.title">
+                    Supprimer ?
+                    <button mat-flat-button type="button" [disabled]="busy() !== null" (click)="delete(r)">Oui, supprimer</button>
+                    <button mat-button type="button" (click)="confirmDeleteId.set(null)">Non</button>
+                  </span>
+                } @else {
+                  <button mat-button type="button" [disabled]="busy() !== null" [attr.aria-label]="'Télécharger ' + r.title" (click)="download(r)">
+                    Télécharger
+                  </button>
+                  <button mat-button type="button" [disabled]="busy() !== null" [attr.aria-label]="'Supprimer ' + r.title" (click)="askDelete(r)">
+                    Supprimer
+                  </button>
+                }
+              </li>
+            } @empty {
+              <li class="muted">Aucune ressource pour cette leçon.</li>
+            }
+          </ul>
+        } @else {
+          <p class="muted">Les ressources n'ont pas pu être chargées. Rechargez la page.</p>
+        }
+
+        @if (resources() !== null) {
+          @if (pendingFile(); as file) {
+            <div class="upload">
+              <p>Fichier : <strong>{{ file.name }}</strong> ({{ file.size | fileSize }})</p>
+              <mat-form-field>
+                <mat-label>Titre de la ressource</mat-label>
+                <input matInput [formControl]="resourceTitle" />
+              </mat-form-field>
+              <div class="buttons">
+                <button mat-flat-button type="button" [disabled]="busy() !== null" (click)="upload()">
+                  {{ busy() === 'upload' ? 'Envoi en cours…' : 'Ajouter la ressource' }}
+                </button>
+                <button mat-button type="button" [disabled]="busy() !== null" (click)="cancelUpload()">Annuler</button>
+              </div>
+            </div>
+          } @else {
+            <div class="choose">
+              <button mat-stroked-button type="button" (click)="fileInput.click()">+ Ajouter un fichier</button>
+              <span class="meta">Formats : {{ formats }} · {{ maxSize }} maximum</span>
+              <input #fileInput class="sr-only" type="file" tabindex="-1" aria-hidden="true" [accept]="accept" (change)="onFileInput($event)" />
+            </div>
+          }
+        }
+      </section>
+    }
+  }
+}

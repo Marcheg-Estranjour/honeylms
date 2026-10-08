@@ -104,11 +104,11 @@ export const routes: Routes = [
         loadComponent: () => import('./features/trainer/course-editor-page').then((m) => m.CourseEditorPage),
         title: 'Gérer la formation' + TITLE_SUFFIX,
       },
-      // Lesson editor (content + resources) — S9-7b.
       {
         path: 'trainer/courses/:courseId/lessons/:lessonId',
         canActivate: [roleGuard('TRAINER')],
-        ...comingSoon('Modifier la leçon', 'S9'),
+        loadComponent: () => import('./features/trainer/lesson-editor-page').then((m) => m.LessonEditorPage),
+        title: 'Modifier la leçon' + TITLE_SUFFIX,
       },
 
       // Admin

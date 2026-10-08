@@ -48,4 +48,19 @@ describe('CourseEditorService', () => {
     service.publishLesson(8).subscribe();
     expectCall('/api/lessons/8/publish', 'PATCH');
   });
+
+  it('uploads a resource as multipart and deletes it', () => {
+    service.uploadResource(8, 'Vocabulaire', new File(['x'], 'voc.pdf')).subscribe();
+    const req = http.expectOne('/api/lessons/8/resources');
+    expect(req.request.method).toBe('POST');
+    const body = req.request.body as FormData;
+    expect(body.get('title')).toBe('Vocabulaire');
+    expect((body.get('file') as File).name).toBe('voc.pdf');
+    req.flush({});
+
+    service.deleteResource(7).subscribe();
+    const del = http.expectOne('/api/resources/7');
+    expect(del.request.method).toBe('DELETE');
+    del.flush(null, { status: 204, statusText: 'No Content' });
+  });
 });
