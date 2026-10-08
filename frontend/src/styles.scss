@@ -88,4 +88,19 @@ h1, h2, .hg-serif {
     color: #1f6a2b;
     background: #e3f4e1;
   }
+
+  &.info {
+    color: #0f3f99;
+    background: #e6effd;
+  }
+
+  &.warning {
+    color: #7a3a06;
+    background: #fdebd9;
+  }
+
+  &.danger {
+    color: #8a1c12;
+    background: #fdecea;
+  }
 }

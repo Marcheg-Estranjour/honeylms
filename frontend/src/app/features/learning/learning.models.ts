@@ -87,3 +87,27 @@ export interface AssignmentDetail {
   status: PublicationStatus;
   files: AttachedFileSummary[];
 }
+
+/** Backend enum `SubmissionStatus`. */
+export type SubmissionStatus = 'SUBMITTED' | 'CORRECTED';
+
+/**
+ * Backend record `SubmissionDetail` — the student's own submission
+ * (GET /api/assignments/{id}/submissions/me, 404 when nothing submitted yet).
+ * Grade and correction fields are null until a trainer corrects it, and are reset by a replacement.
+ */
+export interface SubmissionDetail {
+  id: number;
+  assignmentId: number;
+  studentId: number;
+  submittedAt: string;
+  status: SubmissionStatus;
+  /** Grade out of 20 (BigDecimal serialised as a JSON number), optional even when corrected. */
+  grade: number | null;
+  feedback: string | null;
+  correctedByUserId: number | null;
+  correctedAt: string | null;
+  originalFileName: string;
+  mimeType: string;
+  sizeBytes: number;
+}
