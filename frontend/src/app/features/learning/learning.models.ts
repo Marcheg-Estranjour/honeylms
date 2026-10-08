@@ -56,3 +56,34 @@ export interface LessonCompletionDetail {
   lastViewedAt: string | null;
   completedAt: string | null;
 }
+
+/** Backend record `ResourceDetail` — GET /api/lessons/{id}/resources. */
+export interface ResourceDetail {
+  id: number;
+  lessonId: number;
+  title: string;
+  displayOrder: number;
+  originalFileName: string;
+  mimeType: string;
+  sizeBytes: number;
+}
+
+/** Backend record `AttachedFileSummary` (files attached to an assignment). */
+export interface AttachedFileSummary {
+  storedFileId: number;
+  originalName: string;
+  mimeType: string;
+  sizeBytes: number;
+}
+
+/** Backend record `AssignmentDetail` — GET /api/lessons/{id}/assignments (published only for a student). */
+export interface AssignmentDetail {
+  id: number;
+  lessonId: number;
+  title: string;
+  description: string | null;
+  /** ISO-8601 UTC instant, or null when there is no deadline. */
+  dueDate: string | null;
+  status: PublicationStatus;
+  files: AttachedFileSummary[];
+}

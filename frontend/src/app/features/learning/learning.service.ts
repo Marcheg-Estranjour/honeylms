@@ -2,11 +2,13 @@ import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { catchError, Observable, of, throwError } from 'rxjs';
 import {
+  AssignmentDetail,
   CourseCompletions,
   CourseProgress,
   LessonCompletionDetail,
   LessonDetail,
   ModuleDetail,
+  ResourceDetail,
   ResumePoint,
 } from './learning.models';
 
@@ -34,6 +36,16 @@ export class LearningService {
 
   getLesson(lessonId: number): Observable<LessonDetail> {
     return this.http.get<LessonDetail>(`/api/lessons/${lessonId}`);
+  }
+
+  /** US-FILE-02 — resources (files) of an accessible lesson. */
+  listResources(lessonId: number): Observable<ResourceDetail[]> {
+    return this.http.get<ResourceDetail[]>(`/api/lessons/${lessonId}/resources`);
+  }
+
+  /** US-ASSIGN-04 — published assignments of an accessible lesson. */
+  listAssignments(lessonId: number): Observable<AssignmentDetail[]> {
+    return this.http.get<AssignmentDetail[]>(`/api/lessons/${lessonId}/assignments`);
   }
 
   getCourseProgress(courseId: number): Observable<CourseProgress> {

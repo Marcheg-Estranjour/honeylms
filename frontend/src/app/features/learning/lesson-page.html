@@ -20,12 +20,18 @@
             </div>
           }
 
+          @if (!completionsAvailable()) {
+            <p class="muted small" role="status">Le détail des leçons terminées est momentanément indisponible.</p>
+          }
+
           <nav aria-label="Plan du cours">
             @for (entry of o.modules; track entry.module.id) {
               <div class="module">
                 <div class="module-head">
                   <span>Module {{ entry.module.displayOrder }} · {{ entry.module.title }}</span>
-                  <span class="module-count">{{ moduleCount(entry) }}</span>
+                  @if (completionsAvailable()) {
+                    <span class="module-count">{{ moduleCount(entry) }}</span>
+                  }
                 </div>
                 <ul>
                   @for (l of entry.lessons; track l.id) {
@@ -94,19 +100,72 @@
               }
             </nav>
 
-            <h1>{{ l.value.title }}</h1>
-            @if (l.value.description) {
-              <p class="lead">{{ l.value.description }}</p>
+            <h1>{{ l.value.lesson.title }}</h1>
+            @if (l.value.lesson.description) {
+              <p class="lead">{{ l.value.lesson.description }}</p>
             }
 
             <!-- Plain text only: interpolation escapes HTML (XSS-safe), CSS keeps line breaks. -->
             <article class="content">
-              @if (l.value.content) {
-                <p class="text">{{ l.value.content }}</p>
+              @if (l.value.lesson.content) {
+                <p class="text">{{ l.value.lesson.content }}</p>
               } @else {
                 <p class="muted">Cette leçon n'a pas encore de contenu.</p>
               }
             </article>
+
+            <!-- US-FILE-02 — resources of the lesson -->
+            @if (l.value.resources === null) {
+              <p class="muted small">Les ressources de cette leçon n'ont pas pu être chargées.</p>
+            } @else if (l.value.resources.length) {
+              <section class="block" aria-labelledby="resources-title">
+                <h2 id="resources-title">Ressources</h2>
+                @if (downloadError(); as message) {
+                  <p class="alert error" role="alert">{{ message }}</p>
+                }
+                <ul class="files">
+                  @for (r of l.value.resources; track r.id) {
+                    <li class="file">
+                      <span class="type">{{ fileTypeLabel(r.originalFileName) }}</span>
+                      <span class="name">
+                        {{ r.title }}
+                        <span class="meta">{{ r.originalFileName }} · {{ r.sizeBytes | fileSize }}</span>
+                      </span>
+                      <button
+                        mat-stroked-button
+                        type="button"
+                        [disabled]="downloadingId() === r.id"
+                        [attr.aria-label]="'Télécharger ' + r.title"
+                        (click)="download(r)"
+                      >
+                        {{ downloadingId() === r.id ? 'Téléchargement…' : 'Télécharger' }}
+                      </button>
+                    </li>
+                  }
+                </ul>
+              </section>
+            }
+
+            <!-- US-ASSIGN-04 — published assignments of the lesson -->
+            @if (l.value.assignments === null) {
+              <p class="muted small">Le devoir de cette leçon n'a pas pu être chargé.</p>
+            } @else {
+              @for (a of l.value.assignments; track a.id) {
+                <a class="assignment" [routerLink]="['/courses', courseId(), 'assignments', a.id]">
+                  <span>
+                    <strong>Devoir associé :</strong> {{ a.title }}
+                    @if (a.dueDate) {
+                      @if (isPastDue(a)) {
+                        · <span class="late">date limite dépassée ({{ a.dueDate | date: "d MMMM y 'à' HH:mm" }})</span>
+                      } @else {
+                        · à rendre avant le {{ a.dueDate | date: "d MMMM y 'à' HH:mm" }}
+                      }
+                    }
+                  </span>
+                  <span class="open">Ouvrir <span aria-hidden="true">→</span></span>
+                </a>
+              }
+            }
 
             @if (completeError(); as message) {
               <p class="alert error" role="alert">{{ message }}</p>
