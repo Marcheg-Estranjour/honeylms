@@ -1,0 +1,93 @@
+<div class="head">
+  <h1>Corrections</h1>
+  @if (state() === 'ready') {
+    <p class="summary" role="status">
+      @if (totalToCorrect() === 0) {
+        Aucun dépôt à corriger.
+      } @else {
+        <strong>{{ totalToCorrect() }}</strong> {{ totalToCorrect() > 1 ? 'dépôts' : 'dépôt' }} à corriger
+      }
+    </p>
+  }
+</div>
+
+@switch (state()) {
+  @case ('loading') {
+    <p class="muted" role="status">Chargement des devoirs…</p>
+  }
+  @case ('error') {
+    <div class="muted" role="alert">
+      <p>Les devoirs n'ont pas pu être chargés.</p>
+      <button mat-stroked-button type="button" (click)="load()">Réessayer</button>
+    </div>
+  }
+  @case ('ready') {
+    @if (assignments().length === 0) {
+      <p class="muted">Aucun devoir dans vos formations pour le moment.</p>
+    } @else {
+      <div class="filters">
+        <nav class="chips" aria-label="Filtrer par formation">
+          <a routerLink="/trainer/submissions" [class.active]="courseId() === null" [attr.aria-current]="courseId() === null ? 'true' : null">
+            Toutes
+          </a>
+          @for (c of courses(); track c.id) {
+            <a
+              routerLink="/trainer/submissions"
+              [queryParams]="{ course: c.id }"
+              [class.active]="courseId() === c.id"
+              [attr.aria-current]="courseId() === c.id ? 'true' : null"
+            >
+              {{ c.title }}
+            </a>
+          }
+        </nav>
+        <label class="toggle">
+          <input type="checkbox" [checked]="onlyToCorrect()" (change)="toggleOnlyToCorrect($event)" />
+          Uniquement à corriger
+        </label>
+      </div>
+
+      <ul class="list">
+        @for (a of visible(); track a.id) {
+          <li class="row">
+            <div class="main">
+              <h2>
+                {{ a.title }}
+                @if (a.status === 'DRAFT') {
+                  <span class="hg-tag warning">Brouillon</span>
+                }
+              </h2>
+              <p class="meta">{{ a.courseTitle }} · {{ a.lessonTitle }}</p>
+              <p class="meta" [class.late]="isPastDue(a)">
+                @if (a.dueDate) {
+                  Date limite : {{ a.dueDate | date: "d MMMM y 'à' HH:mm" }}
+                  @if (isPastDue(a)) {
+                    (dépassée)
+                  }
+                } @else {
+                  Pas de date limite
+                }
+              </p>
+            </div>
+            <div class="counters">
+              <span class="rendered">
+                <strong>{{ a.submissions }}/{{ a.enrolledStudents }}</strong>
+                {{ a.submissions > 1 ? 'rendus' : 'rendu' }}
+              </span>
+              @if (a.submissionsToCorrect > 0) {
+                <span class="hg-tag info">{{ a.submissionsToCorrect }} à corriger</span>
+              } @else if (a.submissions > 0) {
+                <span class="hg-tag success">Tout est corrigé</span>
+              }
+            </div>
+            <a mat-stroked-button [routerLink]="['/trainer/assignments', a.id]" [attr.aria-label]="'Ouvrir ' + a.title">
+              Ouvrir
+            </a>
+          </li>
+        } @empty {
+          <li class="muted">Aucun devoir ne correspond à ce filtre.</li>
+        }
+      </ul>
+    }
+  }
+}

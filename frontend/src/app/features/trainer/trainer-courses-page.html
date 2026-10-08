@@ -1,0 +1,61 @@
+<div class="head">
+  <h1>Mes formations</h1>
+  @if (state() === 'ready' && totalToCorrect() > 0) {
+    <a mat-flat-button routerLink="/trainer/submissions">
+      {{ totalToCorrect() }} {{ totalToCorrect() > 1 ? 'dépôts' : 'dépôt' }} à corriger
+    </a>
+  }
+</div>
+
+@switch (state()) {
+  @case ('loading') {
+    <p class="muted" role="status">Chargement de vos formations…</p>
+  }
+  @case ('error') {
+    <div class="muted" role="alert">
+      <p>Vos formations n'ont pas pu être chargées.</p>
+      <button mat-stroked-button type="button" (click)="load()">Réessayer</button>
+    </div>
+  }
+  @case ('ready') {
+    @if (cards().length === 0) {
+      <p class="muted">Aucune formation ne vous est attribuée pour le moment. Contactez un administrateur.</p>
+    } @else {
+      <ul class="grid">
+        @for (card of cards(); track card.course.id) {
+          <li class="card" [class]="card.category.cssClass">
+            <div class="thumb">
+              <app-category-icon [category]="card.course.category" />
+            </div>
+            <div class="body">
+              <div class="tags">
+                <span class="hg-tag">{{ card.category.label }}</span>
+                @if (card.course.status === 'PUBLISHED') {
+                  <span class="hg-tag success">Publiée</span>
+                } @else {
+                  <span class="hg-tag warning">Brouillon</span>
+                }
+              </div>
+              <h2>{{ card.course.title }}</h2>
+              <p class="count">
+                {{ card.course.enrolledStudents }}
+                {{ card.course.enrolledStudents > 1 ? 'étudiants inscrits' : 'étudiant inscrit' }}
+              </p>
+              @if (card.course.submissionsToCorrect > 0) {
+                <a class="to-correct" routerLink="/trainer/submissions" [queryParams]="{ course: card.course.id }">
+                  {{ card.course.submissionsToCorrect }}
+                  {{ card.course.submissionsToCorrect > 1 ? 'dépôts' : 'dépôt' }} à corriger →
+                </a>
+              } @else {
+                <p class="count">Aucun dépôt à corriger</p>
+              }
+              <a mat-stroked-button class="action" [routerLink]="['/trainer/courses', card.course.id]">
+                Gérer la formation
+              </a>
+            </div>
+          </li>
+        }
+      </ul>
+    }
+  }
+}
