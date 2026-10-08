@@ -9,6 +9,7 @@ import static org.mockito.Mockito.when;
 import com.honeygroup.honeylms.common.ForbiddenActionException;
 import com.honeygroup.honeylms.course.dto.AssignmentDetail;
 import com.honeygroup.honeylms.course.dto.CreateAssignmentRequest;
+import com.honeygroup.honeylms.file.DownloadableFile;
 import com.honeygroup.honeylms.file.FileStorageService;
 import com.honeygroup.honeylms.file.StoredFile;
 import com.honeygroup.honeylms.file.StoredFileRepository;
@@ -21,6 +22,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.core.io.ByteArrayResource;
 import org.springframework.mock.web.MockMultipartFile;
 
 @ExtendWith(MockitoExtension.class)
@@ -160,6 +162,66 @@ class AssignmentServiceTest {
                 .when(learningAccessService).assertStudentCanAccessAssignment(assignment, student);
 
         assertThatThrownBy(() -> assignmentService.getAssignment(2000L, "student@example.com"))
+                .isInstanceOf(ForbiddenActionException.class);
+    }
+
+    // ---- Gap G4: download a file attached to an assignment ----
+
+    private UserAccount student() {
+        return UserAccount.builder().id(5L).email("student@example.com")
+                .role(new Role(1L, "STUDENT", "Student")).build();
+    }
+
+    private Assignment publishedAssignment() {
+        return Assignment.builder().id(2000L).lesson(lesson()).title("Devoir")
+                .status(PublicationStatus.PUBLISHED).build();
+    }
+
+    @Test
+    void downloadAttachedFile_returnsTheFile_forAnEnrolledStudent() {
+        UserAccount student = student();
+        Assignment assignment = publishedAssignment();
+        StoredFile file = StoredFile.builder().id(700L).originalName("consigne.docx").storageKey("uuid.docx")
+                .mimeType("application/vnd.openxmlformats-officedocument.wordprocessingml.document").sizeBytes(3L).build();
+
+        when(assignmentRepository.findById(2000L)).thenReturn(Optional.of(assignment));
+        when(courseAuthorizationService.resolveRequester("student@example.com")).thenReturn(student);
+        when(learningAccessService.isStudent(student)).thenReturn(true);
+        when(assignmentFileRepository.findByAssignment_IdAndStoredFile_Id(2000L, 700L))
+                .thenReturn(Optional.of(AssignmentFile.of(assignment, file)));
+        when(fileStorageService.load("uuid.docx")).thenReturn(new ByteArrayResource("x".getBytes()));
+
+        DownloadableFile result = assignmentService.downloadAttachedFile(2000L, 700L, "student@example.com");
+
+        assertThat(result.originalFileName()).isEqualTo("consigne.docx");
+    }
+
+    @Test
+    void downloadAttachedFile_throwsNotFound_whenTheFileBelongsToAnotherAssignment() {
+        UserAccount student = student();
+        Assignment assignment = publishedAssignment();
+
+        when(assignmentRepository.findById(2000L)).thenReturn(Optional.of(assignment));
+        when(courseAuthorizationService.resolveRequester("student@example.com")).thenReturn(student);
+        when(learningAccessService.isStudent(student)).thenReturn(true);
+        when(assignmentFileRepository.findByAssignment_IdAndStoredFile_Id(2000L, 999L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> assignmentService.downloadAttachedFile(2000L, 999L, "student@example.com"))
+                .isInstanceOf(AssignmentFileNotFoundException.class);
+    }
+
+    @Test
+    void downloadAttachedFile_propagatesForbidden_whenStudentHasNoAccess() {
+        UserAccount student = student();
+        Assignment assignment = publishedAssignment();
+
+        when(assignmentRepository.findById(2000L)).thenReturn(Optional.of(assignment));
+        when(courseAuthorizationService.resolveRequester("student@example.com")).thenReturn(student);
+        when(learningAccessService.isStudent(student)).thenReturn(true);
+        doThrow(new ForbiddenActionException("not enrolled"))
+                .when(learningAccessService).assertStudentCanAccessAssignment(assignment, student);
+
+        assertThatThrownBy(() -> assignmentService.downloadAttachedFile(2000L, 700L, "student@example.com"))
                 .isInstanceOf(ForbiddenActionException.class);
     }
 }

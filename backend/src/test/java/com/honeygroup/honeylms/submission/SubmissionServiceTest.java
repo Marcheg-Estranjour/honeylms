@@ -18,6 +18,7 @@ import com.honeygroup.honeylms.course.CourseModule;
 import com.honeygroup.honeylms.course.LearningAccessService;
 import com.honeygroup.honeylms.course.Lesson;
 import com.honeygroup.honeylms.course.PublicationStatus;
+import com.honeygroup.honeylms.file.DownloadableFile;
 import com.honeygroup.honeylms.file.FileStorageService;
 import com.honeygroup.honeylms.file.StoredFile;
 import com.honeygroup.honeylms.file.StoredFileRepository;
@@ -35,6 +36,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.core.io.ByteArrayResource;
 import org.springframework.mock.web.MockMultipartFile;
 
 @ExtendWith(MockitoExtension.class)
@@ -313,5 +315,108 @@ class SubmissionServiceTest {
         List<SubmissionDetail> result = submissionService.listSubmissions(2000L, "trainer1@example.com");
 
         assertThat(result).hasSize(1);
+    }
+
+    // ---- Gap G2: my submission ----
+
+    private Submission submissionOf(UserAccount owner, Assignment assignment) {
+        StoredFile file = StoredFile.builder().id(500L).originalName("devoir.pdf").storageKey("uuid.pdf")
+                .mimeType("application/pdf").sizeBytes(4L).build();
+        return Submission.builder().id(9000L).assignment(assignment).student(owner).storedFile(file)
+                .submittedAt(Instant.now()).status(SubmissionStatus.SUBMITTED).build();
+    }
+
+    @Test
+    void getMySubmission_returnsTheStudentsOwnSubmission() {
+        UserAccount student = student();
+        Assignment assignment = assignment(null);
+
+        when(assignmentRepository.findById(2000L)).thenReturn(Optional.of(assignment));
+        when(courseAuthorizationService.resolveRequester("student@example.com")).thenReturn(student);
+        when(submissionRepository.findByAssignment_IdAndStudent_Id(2000L, 5L))
+                .thenReturn(Optional.of(submissionOf(student, assignment)));
+
+        SubmissionDetail result = submissionService.getMySubmission(2000L, "student@example.com");
+
+        assertThat(result.id()).isEqualTo(9000L);
+        assertThat(result.originalFileName()).isEqualTo("devoir.pdf");
+        verify(learningAccessService).assertStudentCanAccessAssignment(assignment, student);
+    }
+
+    @Test
+    void getMySubmission_throwsNoSubmissionYet_whenNothingSubmitted() {
+        UserAccount student = student();
+        Assignment assignment = assignment(null);
+
+        when(assignmentRepository.findById(2000L)).thenReturn(Optional.of(assignment));
+        when(courseAuthorizationService.resolveRequester("student@example.com")).thenReturn(student);
+        when(submissionRepository.findByAssignment_IdAndStudent_Id(2000L, 5L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> submissionService.getMySubmission(2000L, "student@example.com"))
+                .isInstanceOf(NoSubmissionYetException.class);
+    }
+
+    @Test
+    void getMySubmission_propagatesForbidden_whenAssignmentNotAccessible() {
+        UserAccount student = student();
+        Assignment assignment = assignment(null);
+
+        when(assignmentRepository.findById(2000L)).thenReturn(Optional.of(assignment));
+        when(courseAuthorizationService.resolveRequester("student@example.com")).thenReturn(student);
+        doThrow(new ForbiddenActionException("not enrolled"))
+                .when(learningAccessService).assertStudentCanAccessAssignment(assignment, student);
+
+        assertThatThrownBy(() -> submissionService.getMySubmission(2000L, "student@example.com"))
+                .isInstanceOf(ForbiddenActionException.class);
+    }
+
+    // ---- Gap G3: download the submitted file ----
+
+    @Test
+    void downloadSubmissionFile_allowsTheOwner() {
+        UserAccount student = student();
+        Submission submission = submissionOf(student, assignment(null));
+
+        when(submissionRepository.findById(9000L)).thenReturn(Optional.of(submission));
+        when(courseAuthorizationService.resolveRequester("student@example.com")).thenReturn(student);
+        when(learningAccessService.isStudent(student)).thenReturn(true);
+        when(fileStorageService.load("uuid.pdf")).thenReturn(new ByteArrayResource("%PDF".getBytes()));
+
+        DownloadableFile result = submissionService.downloadSubmissionFile(9000L, "student@example.com");
+
+        assertThat(result.originalFileName()).isEqualTo("devoir.pdf");
+        assertThat(result.mimeType()).isEqualTo("application/pdf");
+    }
+
+    @Test
+    void downloadSubmissionFile_forbidsAnotherStudent() {
+        UserAccount owner = student();
+        UserAccount other = UserAccount.builder().id(6L).email("other@example.com")
+                .role(new Role(1L, "STUDENT", "Student")).build();
+        Submission submission = submissionOf(owner, assignment(null));
+
+        when(submissionRepository.findById(9000L)).thenReturn(Optional.of(submission));
+        when(courseAuthorizationService.resolveRequester("other@example.com")).thenReturn(other);
+        when(learningAccessService.isStudent(other)).thenReturn(true);
+
+        assertThatThrownBy(() -> submissionService.downloadSubmissionFile(9000L, "other@example.com"))
+                .isInstanceOf(ForbiddenActionException.class);
+        verify(fileStorageService, never()).load(any());
+    }
+
+    @Test
+    void downloadSubmissionFile_checksTheTrainerPerimeter() {
+        UserAccount trainer = trainer();
+        Assignment assignment = assignment(null);
+        Submission submission = submissionOf(student(), assignment);
+
+        when(submissionRepository.findById(9000L)).thenReturn(Optional.of(submission));
+        when(courseAuthorizationService.resolveRequester("trainer1@example.com")).thenReturn(trainer);
+        when(learningAccessService.isStudent(trainer)).thenReturn(false);
+        doThrow(new ForbiddenActionException("not your course"))
+                .when(courseAuthorizationService).assertCanManageCourse(assignment.getLesson().getCourseModule().getCourse(), trainer);
+
+        assertThatThrownBy(() -> submissionService.downloadSubmissionFile(9000L, "trainer1@example.com"))
+                .isInstanceOf(ForbiddenActionException.class);
     }
 }

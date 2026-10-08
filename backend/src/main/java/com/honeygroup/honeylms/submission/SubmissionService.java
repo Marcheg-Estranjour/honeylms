@@ -7,6 +7,7 @@ import com.honeygroup.honeylms.course.AssignmentRepository;
 import com.honeygroup.honeylms.course.Course;
 import com.honeygroup.honeylms.course.CourseAuthorizationService;
 import com.honeygroup.honeylms.course.LearningAccessService;
+import com.honeygroup.honeylms.file.DownloadableFile;
 import com.honeygroup.honeylms.file.FileStorageService;
 import com.honeygroup.honeylms.file.StoredFile;
 import com.honeygroup.honeylms.file.StoredFileRepository;
@@ -123,6 +124,41 @@ public class SubmissionService {
             courseAuthorizationService.assertCanManageCourse(courseOf(submission.getAssignment()), requester);
         }
         return toDetail(submission);
+    }
+
+    /**
+     * Gap G2 — the logged-in Student's own submission for an assignment.
+     * 403 if the assignment is not accessible to him, 404 (NoSubmissionYetException)
+     * when he has not submitted anything yet.
+     */
+    @Transactional(readOnly = true)
+    public SubmissionDetail getMySubmission(Long assignmentId, String studentEmail) {
+        Assignment assignment = findAssignmentOrThrow(assignmentId);
+        UserAccount student = courseAuthorizationService.resolveRequester(studentEmail);
+        learningAccessService.assertStudentCanAccessAssignment(assignment, student);
+
+        return submissionRepository.findByAssignment_IdAndStudent_Id(assignmentId, student.getId())
+                .map(this::toDetail)
+                .orElseThrow(() -> new NoSubmissionYetException(assignmentId));
+    }
+
+    /**
+     * Gap G3 — download the submitted file. Same rule as getSubmission: the owning
+     * Student, or a Trainer/Admin within the perimeter of the Assignment's Course.
+     */
+    @Transactional(readOnly = true)
+    public DownloadableFile downloadSubmissionFile(Long submissionId, String requesterEmail) {
+        Submission submission = findSubmissionOrThrow(submissionId);
+        UserAccount requester = courseAuthorizationService.resolveRequester(requesterEmail);
+
+        if (learningAccessService.isStudent(requester)) {
+            assertOwner(submission, requester);
+        } else {
+            courseAuthorizationService.assertCanManageCourse(courseOf(submission.getAssignment()), requester);
+        }
+
+        StoredFile file = submission.getStoredFile();
+        return new DownloadableFile(fileStorageService.load(file.getStorageKey()), file.getOriginalName(), file.getMimeType());
     }
 
     /**
