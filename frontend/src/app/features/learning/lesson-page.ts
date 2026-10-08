@@ -1,3 +1,4 @@
+import { DatePipe } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -14,11 +15,20 @@ import {
   tap,
 } from 'rxjs';
 import { GENERIC_ERROR_MESSAGE } from '../../core/api/api-error.model';
+import { FileDownloadService } from '../../core/api/file-download.service';
+import { fileTypeLabel, FileSizePipe } from '../../shared/format/file-size.pipe';
 import { CourseOutline, CourseOutlineService, OutlineModule } from './course-outline.service';
-import { CourseProgress, LessonDetail } from './learning.models';
+import { AssignmentDetail, CourseProgress, LessonDetail, ResourceDetail } from './learning.models';
 import { LearningService } from './learning.service';
 
 type Loadable<T> = { state: 'loading' } | { state: 'ready'; value: T } | { state: 'error'; message: string };
+
+/** What the main column shows. null lists = could not be loaded (the lesson is still readable). */
+interface LessonView {
+  lesson: LessonDetail;
+  resources: ResourceDetail[] | null;
+  assignments: AssignmentDetail[] | null;
+}
 
 /**
  * US-LEARNING-07 (read a lesson) + US-PROGRESS-01 (complete it) + US-PROGRESS-02/03 (progress).
@@ -27,12 +37,14 @@ type Loadable<T> = { state: 'loading' } | { state: 'ready'; value: T } | { state
  * - The outline (sidebar) is loaded once per course; the lesson part reloads when the
  *   lessonId changes (previous / next) — switchMap cancels a slower previous request.
  * - Opening a lesson records the visit (PUT /view) for the resume point.
+ * - Resources (US-FILE-02) and published assignments (US-ASSIGN-04) are loaded with the lesson;
+ *   if one of these lists fails, the lesson stays readable and only that block shows an error.
  * - CHOIX TECHNIQUE (validé) : the lesson content is displayed as PLAIN TEXT (Angular
  *   interpolation escapes any HTML), line breaks kept with CSS. No HTML is ever interpreted.
  */
 @Component({
   selector: 'app-lesson-page',
-  imports: [RouterLink, MatButtonModule],
+  imports: [RouterLink, DatePipe, MatButtonModule, FileSizePipe],
   templateUrl: './lesson-page.html',
   styleUrl: './lesson-page.scss',
 })
@@ -40,12 +52,23 @@ export class LessonPage {
   private readonly route = inject(ActivatedRoute);
   private readonly outlines = inject(CourseOutlineService);
   private readonly learning = inject(LearningService);
+  private readonly downloads = inject(FileDownloadService);
 
   protected readonly courseId = signal(0);
   protected readonly lessonId = signal(0);
   protected readonly outline = signal<Loadable<CourseOutline>>({ state: 'loading' });
-  protected readonly lesson = signal<Loadable<LessonDetail>>({ state: 'loading' });
+  protected readonly lesson = signal<Loadable<LessonView>>({ state: 'loading' });
   protected readonly completedIds = signal<ReadonlySet<number>>(new Set());
+  /**
+   * false when GET /completions failed: the sidebar then hides the ✔ and the « x/y » counters
+   * instead of showing « 0/3 » next to a percentage that says otherwise.
+   */
+  protected readonly completionsAvailable = signal(true);
+  /** Id of the resource being downloaded, if any. */
+  protected readonly downloadingId = signal<number | null>(null);
+  protected readonly downloadError = signal<string | null>(null);
+  protected readonly fileTypeLabel = fileTypeLabel;
+  protected readonly now = Date.now();
   protected readonly progress = signal<CourseProgress | null>(null);
   protected readonly completing = signal(false);
   protected readonly completeError = signal<string | null>(null);
@@ -107,12 +130,19 @@ export class LessonPage {
           this.lessonId.set(lessonId);
           this.lesson.set({ state: 'loading' });
           this.completeError.set(null);
+          this.downloadError.set(null);
         }),
         switchMap((lessonId) =>
-          this.learning.getLesson(lessonId).pipe(
+          forkJoin({
+            lesson: this.learning.getLesson(lessonId),
+            resources: this.learning.listResources(lessonId).pipe(catchError(() => of(null))),
+            assignments: this.learning.listAssignments(lessonId).pipe(catchError(() => of(null))),
+          }).pipe(
             tap(() => this.recordView(lessonId)),
-            map((value): Loadable<LessonDetail> => ({ state: 'ready', value })),
-            catchError((error: unknown) => of<Loadable<LessonDetail>>({ state: 'error', message: lessonErrorMessage(error) })),
+            map((value): Loadable<LessonView> => ({ state: 'ready', value })),
+            catchError((error: unknown) =>
+              of<Loadable<LessonView>>({ state: 'error', message: lessonErrorMessage(error) }),
+            ),
           ),
         ),
         takeUntilDestroyed(),
@@ -151,6 +181,24 @@ export class LessonPage {
       });
   }
 
+  /** US-FILE-02 — download through HttpClient (JWT header), see FileDownloadService. */
+  protected download(resource: ResourceDetail): void {
+    this.downloadingId.set(resource.id);
+    this.downloadError.set(null);
+    this.downloads.download(`/api/resources/${resource.id}/download`, resource.originalFileName).subscribe({
+      next: () => this.downloadingId.set(null),
+      error: () => {
+        this.downloadingId.set(null);
+        this.downloadError.set(`« ${resource.title} » n'a pas pu être téléchargé. Réessayez.`);
+      },
+    });
+  }
+
+  /** True when the deadline is passed (display only: the backend enforces the rule). */
+  protected isPastDue(assignment: AssignmentDetail): boolean {
+    return assignment.dueDate !== null && Date.parse(assignment.dueDate) < this.now;
+  }
+
   private loadCourseState(courseId: number): Observable<unknown> {
     return forkJoin({
       outline: this.outlines.load(courseId),
@@ -160,6 +208,7 @@ export class LessonPage {
       tap(({ outline, completions, progress }) => {
         this.outline.set({ state: 'ready', value: outline });
         this.completedIds.set(new Set(completions?.completedLessonIds ?? []));
+        this.completionsAvailable.set(completions !== null);
         this.progress.set(progress);
       }),
       catchError((error: unknown) => {

@@ -64,6 +64,12 @@ export const routes: Routes = [
         loadComponent: () => import('./features/learning/lesson-page').then((m) => m.LessonPage),
         title: 'Leçon' + TITLE_SUFFIX,
       },
+      // Assignment of a lesson + student submission — S9-4.
+      {
+        path: 'courses/:courseId/assignments/:assignmentId',
+        canActivate: [roleGuard('STUDENT')],
+        ...comingSoon('Devoir', 'S9'),
+      },
       {
         path: 'my-courses',
         canActivate: [roleGuard('STUDENT')],

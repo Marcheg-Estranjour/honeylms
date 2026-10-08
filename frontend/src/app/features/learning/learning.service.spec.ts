@@ -32,6 +32,8 @@ describe('LearningService', () => {
     service.getCompletions(1).subscribe();
     service.recordView(8).subscribe();
     service.markCompleted(8).subscribe();
+    service.listResources(8).subscribe();
+    service.listAssignments(8).subscribe();
     http.expectOne('/api/courses/1/modules').flush([]);
     http.expectOne('/api/modules/3/lessons').flush([]);
     http.expectOne('/api/courses/1/completions').flush({ courseId: 1, completedLessonIds: [] });
@@ -41,6 +43,8 @@ describe('LearningService', () => {
     const completion = http.expectOne('/api/lessons/8/completion');
     expect(completion.request.method).toBe('POST');
     completion.flush({});
+    http.expectOne('/api/lessons/8/resources').flush([]);
+    http.expectOne('/api/lessons/8/assignments').flush([]);
   });
 
   it('returns the resume point', () => {
