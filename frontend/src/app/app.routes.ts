@@ -78,8 +78,30 @@ export const routes: Routes = [
       },
 
       // Trainer
-      { path: 'trainer/courses', canActivate: [roleGuard('TRAINER')], ...comingSoon('Mes formations', 'S9') },
-      { path: 'trainer/submissions', canActivate: [roleGuard('TRAINER')], ...comingSoon('Corrections', 'S9') },
+      {
+        path: 'trainer/courses',
+        canActivate: [roleGuard('TRAINER')],
+        loadComponent: () => import('./features/trainer/trainer-courses-page').then((m) => m.TrainerCoursesPage),
+        title: 'Mes formations' + TITLE_SUFFIX,
+      },
+      {
+        path: 'trainer/submissions',
+        canActivate: [roleGuard('TRAINER')],
+        loadComponent: () =>
+          import('./features/trainer/trainer-submissions-page').then((m) => m.TrainerSubmissionsPage),
+        title: 'Corrections' + TITLE_SUFFIX,
+      },
+      // Grading screen — S9-6b; course editor — S9-7.
+      {
+        path: 'trainer/assignments/:assignmentId',
+        canActivate: [roleGuard('TRAINER')],
+        ...comingSoon('Corriger un devoir', 'S9'),
+      },
+      {
+        path: 'trainer/courses/:courseId',
+        canActivate: [roleGuard('TRAINER')],
+        ...comingSoon('Gérer la formation', 'S9'),
+      },
 
       // Admin
       { path: 'admin/users', canActivate: [roleGuard('ADMIN')], ...comingSoon('Utilisateurs', 'S10') },
