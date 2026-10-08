@@ -1,0 +1,168 @@
+@switch (state()) {
+  @case ('loading') {
+    <p class="muted" role="status">Chargement du devoir…</p>
+  }
+  @case ('error') {
+    <div class="muted" role="alert">
+      <p>{{ errorMessage() }}</p>
+      <a mat-stroked-button routerLink="/trainer/submissions">Retour aux corrections</a>
+    </div>
+  }
+  @case ('ready') {
+    @if (data(); as d) {
+      <nav class="crumbs" aria-label="Fil d'Ariane">
+        <a routerLink="/trainer/submissions">Corrections</a>
+        <span aria-hidden="true">/</span>
+        <a routerLink="/trainer/submissions" [queryParams]="{ course: d.summary.courseId }">{{ d.summary.courseTitle }}</a>
+        <span aria-hidden="true">/</span>
+        <span aria-current="page">{{ d.summary.lessonTitle }}</span>
+      </nav>
+
+      <header class="head">
+        <h1>{{ d.assignment.title }}</h1>
+        @if (d.assignment.status === 'DRAFT') {
+          <span class="hg-tag warning">Brouillon</span>
+        }
+      </header>
+      <p class="meta" [class.late]="pastDue()">
+        @if (d.assignment.dueDate; as due) {
+          Date limite : {{ due | date: "EEEE d MMMM y 'à' HH:mm" }}
+          @if (pastDue()) {
+            (dépassée)
+          }
+        } @else {
+          Pas de date limite
+        }
+        · {{ submissions().length }}/{{ d.summary.enrolledStudents }} rendus
+        · <strong>{{ toCorrect() }} à corriger</strong>
+      </p>
+
+      @if (d.assignment.description) {
+        <details class="brief">
+          <summary>Consigne</summary>
+          <p class="text">{{ d.assignment.description }}</p>
+        </details>
+      }
+
+      <div class="layout">
+        <!-- ===== Students ===== -->
+        <section class="card" aria-labelledby="students-title">
+          <h2 id="students-title">Étudiants</h2>
+          @if (students() === null) {
+            <p class="alert warn">La liste des inscrits n'a pas pu être chargée : seuls les dépôts sont affichés.</p>
+          }
+          <ul class="students">
+            @for (row of rows(); track row.key) {
+              <li>
+                <button
+                  type="button"
+                  class="student"
+                  [class.current]="row.key === selectedKey()"
+                  [attr.aria-pressed]="row.key === selectedKey()"
+                  (click)="select(row)"
+                >
+                  <span class="who">
+                    <strong>{{ row.name }}</strong>
+                    @if (row.submission; as s) {
+                      <span class="meta">Déposé le {{ s.submittedAt | date: "d MMM y 'à' HH:mm" }}</span>
+                    }
+                  </span>
+                  @switch (row.submission?.status) {
+                    @case ('SUBMITTED') {
+                      <span class="hg-tag info">À corriger</span>
+                    }
+                    @case ('CORRECTED') {
+                      <span class="hg-tag success">
+                        @if (row.submission.grade !== null) {
+                          {{ row.submission.grade | number: '1.0-2' }}/20
+                        } @else {
+                          Corrigé
+                        }
+                      </span>
+                    }
+                    @default {
+                      <span class="hg-tag" [class.danger]="pastDue()">Non rendu</span>
+                    }
+                  }
+                </button>
+              </li>
+            } @empty {
+              <li class="muted">Aucun étudiant inscrit et aucun dépôt.</li>
+            }
+          </ul>
+        </section>
+
+        <!-- ===== Grading panel ===== -->
+        <section class="card panel" aria-labelledby="panel-title">
+          @if (selected(); as row) {
+            <h2 id="panel-title">{{ row.name }}</h2>
+            @if (row.email) {
+              <p class="meta">{{ row.email }}</p>
+            }
+
+            @if (row.submission; as s) {
+              <div class="file">
+                <span class="name">
+                  {{ s.originalFileName }}
+                  <span class="meta">{{ s.sizeBytes | fileSize }} · déposé le {{ s.submittedAt | date: "d MMMM y 'à' HH:mm" }}</span>
+                </span>
+                <button mat-stroked-button type="button" [disabled]="downloading()" (click)="download(s, row.name)">
+                  {{ downloading() ? 'Téléchargement…' : 'Télécharger' }}
+                </button>
+              </div>
+              @if (downloadError(); as message) {
+                <p class="alert error" role="alert">{{ message }}</p>
+              }
+
+              @if (s.status === 'CORRECTED' && s.correctedAt) {
+                <p class="meta">
+                  Corrigé
+                  @if (s.correctedByName) {
+                    par {{ s.correctedByName }}
+                  }
+                  le {{ s.correctedAt | date: "d MMMM y 'à' HH:mm" }}
+                </p>
+              }
+
+              <form class="grading" [formGroup]="form" (ngSubmit)="save()">
+                <mat-form-field class="grade">
+                  <mat-label>Note /20 (facultative)</mat-label>
+                  <input matInput formControlName="grade" inputmode="decimal" autocomplete="off" />
+                  <span matTextSuffix>/ 20</span>
+                </mat-form-field>
+                <mat-form-field>
+                  <mat-label>Commentaire du formateur</mat-label>
+                  <textarea matInput formControlName="feedback" rows="6"></textarea>
+                </mat-form-field>
+
+                @if (saveError(); as message) {
+                  <p class="alert error" role="alert">{{ message }}</p>
+                }
+                @if (notice(); as message) {
+                  <p class="alert ok" role="status">{{ message }}</p>
+                }
+
+                <button mat-flat-button type="submit" [disabled]="saving()">
+                  @if (saving()) {
+                    Enregistrement…
+                  } @else if (s.status === 'CORRECTED') {
+                    Mettre à jour la correction
+                  } @else {
+                    Enregistrer la correction
+                  }
+                </button>
+              </form>
+            } @else {
+              <p class="muted">
+                {{ row.name }} n'a pas encore rendu ce devoir{{ pastDue() ? ' (date limite dépassée)' : '' }}.
+              </p>
+            }
+          } @else {
+            <h2 id="panel-title">Correction</h2>
+            <p class="muted">Sélectionnez un étudiant dans la liste.</p>
+          }
+        </section>
+      </div>
+    }
+  }
+}
