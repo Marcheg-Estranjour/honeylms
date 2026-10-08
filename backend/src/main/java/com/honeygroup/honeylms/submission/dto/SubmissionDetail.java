@@ -15,6 +15,10 @@ public record SubmissionDetail(
         Instant correctedAt,
         String originalFileName,
         String mimeType,
-        long sizeBytes
+        long sizeBytes,
+        /* « Camille Martin » — for the trainer's correction list (gap G10). */
+        String studentName,
+        /* Trainer who corrected it, null while not corrected (gap G10). */
+        String correctedByName
 ) {
 }

@@ -247,7 +247,9 @@ public class SubmissionService {
                 s.getCorrectedAt(),
                 s.getStoredFile().getOriginalName(),
                 s.getStoredFile().getMimeType(),
-                s.getStoredFile().getSizeBytes()
+                s.getStoredFile().getSizeBytes(),
+                s.getStudent().fullName(),
+                s.getCorrectedBy() != null ? s.getCorrectedBy().fullName() : null
         );
     }
 }

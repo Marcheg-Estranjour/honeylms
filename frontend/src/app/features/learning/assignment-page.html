@@ -210,7 +210,13 @@
                   <p class="muted">Pas de commentaire.</p>
                 }
                 @if (s.correctedAt) {
-                  <p class="meta">Corrigé le {{ s.correctedAt | date: "d MMMM y 'à' HH:mm" }}</p>
+                  <p class="meta">
+                    Corrigé
+                    @if (s.correctedByName) {
+                      par {{ s.correctedByName }}
+                    }
+                    le {{ s.correctedAt | date: "d MMMM y 'à' HH:mm" }}
+                  </p>
                 }
               } @else {
                 <p class="muted">En attente de correction.</p>

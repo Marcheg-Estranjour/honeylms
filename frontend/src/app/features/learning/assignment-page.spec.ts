@@ -48,6 +48,8 @@ describe('AssignmentPage', () => {
     originalFileName: 'relance.pdf',
     mimeType: 'application/pdf',
     sizeBytes: 1536,
+    studentName: 'Camille Martin',
+    correctedByName: null,
   };
   const corrected: SubmissionDetail = {
     ...submitted,
@@ -56,6 +58,7 @@ describe('AssignmentPage', () => {
     feedback: 'Bon ton.\nAttention aux formules.',
     correctedByUserId: 2,
     correctedAt: '2026-10-06T14:00:00Z',
+    correctedByName: 'Paul Durand',
   };
 
   async function open() {
@@ -204,7 +207,7 @@ describe('AssignmentPage', () => {
     expect(text()).toContain('v2.pdf');
   });
 
-  it('shows the correction with grade, comment and date', async () => {
+  it('shows the correction with grade, comment, corrector and date', async () => {
     api.getMySubmission.mockReturnValue(of(corrected));
     await open();
     expect(tag()!.textContent).toContain('Corrigé');
@@ -212,7 +215,7 @@ describe('AssignmentPage', () => {
     expect(panel.textContent).toContain('13,5');
     expect(panel.textContent).toContain('/ 20');
     expect(panel.textContent).toContain('Attention aux formules.');
-    expect(panel.textContent).toContain('Corrigé le 6 octobre 2026');
+    expect(panel.textContent!.replace(/\s+/g, ' ')).toContain('Corrigé par Paul Durand le 6 octobre 2026');
   });
 
   it('asks for an explicit confirmation before replacing a corrected submission', async () => {

@@ -283,6 +283,29 @@ class SubmissionServiceTest {
     }
 
     @Test
+    void correctSubmission_returnsStudentAndCorrectorNames() {
+        UserAccount trainer = trainer();
+        trainer.setFirstName("Paul");
+        trainer.setLastName("Durand");
+        UserAccount student = student();
+        student.setFirstName("Camille");
+        student.setLastName("Martin");
+        StoredFile storedFile = StoredFile.builder().id(500L).originalName("devoir.pdf").mimeType("application/pdf").build();
+        Submission submission = Submission.builder().id(9000L).student(student).assignment(assignment(null))
+                .storedFile(storedFile).status(SubmissionStatus.SUBMITTED).build();
+
+        when(submissionRepository.findById(9000L)).thenReturn(Optional.of(submission));
+        when(courseAuthorizationService.resolveRequester("trainer1@example.com")).thenReturn(trainer);
+        when(submissionRepository.save(any(Submission.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        SubmissionDetail result = submissionService.correctSubmission(
+                9000L, new CorrectionRequest(null, "ok"), "trainer1@example.com");
+
+        assertThat(result.studentName()).isEqualTo("Camille Martin");
+        assertThat(result.correctedByName()).isEqualTo("Paul Durand");
+    }
+
+    @Test
     void correctSubmission_propagatesForbidden_whenTrainerOutsidePerimeter() {
         UserAccount trainer = trainer();
         Submission submission = Submission.builder().id(9000L).student(student()).assignment(assignment(null)).build();
