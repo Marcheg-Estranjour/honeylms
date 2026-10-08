@@ -13,11 +13,13 @@ import com.honeygroup.honeylms.course.CourseAuthorizationService;
 import com.honeygroup.honeylms.course.CourseCategory;
 import com.honeygroup.honeylms.course.CourseModule;
 import com.honeygroup.honeylms.course.CourseModuleRepository;
+import com.honeygroup.honeylms.course.CourseNotFoundException;
 import com.honeygroup.honeylms.course.CourseRepository;
 import com.honeygroup.honeylms.course.LearningAccessService;
 import com.honeygroup.honeylms.course.Lesson;
 import com.honeygroup.honeylms.course.LessonRepository;
 import com.honeygroup.honeylms.course.PublicationStatus;
+import com.honeygroup.honeylms.progress.dto.CourseCompletions;
 import com.honeygroup.honeylms.progress.dto.CourseProgress;
 import com.honeygroup.honeylms.progress.dto.LessonCompletionDetail;
 import com.honeygroup.honeylms.progress.dto.ResumeResponse;
@@ -180,5 +182,68 @@ class ProgressServiceTest {
 
         assertThatThrownBy(() -> progressService.getResumePoint(10L, "student@example.com"))
                 .isInstanceOf(NoResumePointException.class);
+    }
+
+    // ---- Gap G1: completed lessons of a course ----
+
+    @Test
+    void getCourseCompletions_returnsSortedIdsOfCompletedAccessibleLessons() {
+        UserAccount student = student();
+        Course course = Course.builder().id(10L).status(PublicationStatus.PUBLISHED).build();
+        Lesson first = lesson(1L);
+        Lesson third = lesson(3L);
+        List<Lesson> accessible = List.of(first, lesson(2L), third);
+
+        LessonCompletion doneThird = LessonCompletion.newFor(student, third);
+        doneThird.setCompletedAt(Instant.now());
+        LessonCompletion doneFirst = LessonCompletion.newFor(student, first);
+        doneFirst.setCompletedAt(Instant.now());
+
+        when(courseRepository.findById(10L)).thenReturn(Optional.of(course));
+        when(courseAuthorizationService.resolveRequester("student@example.com")).thenReturn(student);
+        when(lessonRepository.findAccessibleLessonsByCourse(10L)).thenReturn(accessible);
+        when(completionRepository.findByStudent_IdAndLesson_InAndCompletedAtIsNotNull(5L, accessible))
+                .thenReturn(List.of(doneThird, doneFirst));
+
+        CourseCompletions result = progressService.getCourseCompletions(10L, "student@example.com");
+
+        assertThat(result.courseId()).isEqualTo(10L);
+        assertThat(result.completedLessonIds()).containsExactly(1L, 3L);
+    }
+
+    @Test
+    void getCourseCompletions_returnsEmptyList_whenNoAccessibleLessons() {
+        UserAccount student = student();
+        Course course = Course.builder().id(10L).status(PublicationStatus.PUBLISHED).build();
+
+        when(courseRepository.findById(10L)).thenReturn(Optional.of(course));
+        when(courseAuthorizationService.resolveRequester("student@example.com")).thenReturn(student);
+        when(lessonRepository.findAccessibleLessonsByCourse(10L)).thenReturn(List.of());
+
+        CourseCompletions result = progressService.getCourseCompletions(10L, "student@example.com");
+
+        assertThat(result.completedLessonIds()).isEmpty();
+    }
+
+    @Test
+    void getCourseCompletions_propagatesForbidden_whenNotEnrolled() {
+        UserAccount student = student();
+        Course course = Course.builder().id(10L).status(PublicationStatus.PUBLISHED).build();
+
+        when(courseRepository.findById(10L)).thenReturn(Optional.of(course));
+        when(courseAuthorizationService.resolveRequester("student@example.com")).thenReturn(student);
+        doThrow(new ForbiddenActionException("not enrolled"))
+                .when(learningAccessService).assertStudentCanAccessCourse(course, student);
+
+        assertThatThrownBy(() -> progressService.getCourseCompletions(10L, "student@example.com"))
+                .isInstanceOf(ForbiddenActionException.class);
+    }
+
+    @Test
+    void getCourseCompletions_throwsNotFound_whenCourseDoesNotExist() {
+        when(courseRepository.findById(99L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> progressService.getCourseCompletions(99L, "student@example.com"))
+                .isInstanceOf(CourseNotFoundException.class);
     }
 }
