@@ -1,0 +1,167 @@
+@switch (state()) {
+  @case ('loading') {
+    <p class="muted" role="status">Chargement de la formation…</p>
+  }
+  @case ('error') {
+    <div class="muted" role="alert">
+      <p>{{ errorMessage() }}</p>
+      <a mat-stroked-button routerLink="/trainer/courses">Retour à mes formations</a>
+    </div>
+  }
+  @case ('ready') {
+    @if (outline(); as o) {
+      <nav class="crumbs" aria-label="Fil d'Ariane">
+        <a routerLink="/trainer/courses">Mes formations</a>
+        <span aria-hidden="true">/</span>
+        <span aria-current="page">{{ o.course.title }}</span>
+      </nav>
+
+      <header class="head">
+        <h1>{{ o.course.title }}</h1>
+        <span class="hg-tag" [class.success]="published()" [class.warning]="!published()">
+          {{ published() ? 'Publiée' : 'Brouillon' }}
+        </span>
+        <button
+          class="publish"
+          mat-stroked-button
+          type="button"
+          [disabled]="busy() !== null"
+          (click)="togglePublication()"
+        >
+          {{ busy() === 'publish' ? 'Enregistrement…' : published() ? 'Dépublier la formation' : 'Publier la formation' }}
+        </button>
+      </header>
+      <p class="hint">
+        Un étudiant ne voit une leçon que si la formation, son module et la leçon sont tous publiés.
+      </p>
+
+      @if (courseNotice(); as message) {
+        <p class="alert ok" role="status">{{ message }}</p>
+      }
+      @if (courseError(); as message) {
+        <p class="alert error" role="alert">{{ message }}</p>
+      }
+
+      <!-- ===== Course information ===== -->
+      <section class="card" aria-labelledby="info-title">
+        <h2 id="info-title">Informations</h2>
+        <form class="info" [formGroup]="courseForm" (ngSubmit)="saveCourse()">
+          <mat-form-field>
+            <mat-label>Titre</mat-label>
+            <input matInput formControlName="title" />
+            @if (courseForm.controls.title.hasError('required')) {
+              <mat-error>Le titre est obligatoire.</mat-error>
+            }
+          </mat-form-field>
+          <mat-form-field>
+            <mat-label>Domaine</mat-label>
+            <select matNativeControl formControlName="category">
+              @for (c of categories; track c.code) {
+                <option [value]="c.code">{{ c.label }}</option>
+              }
+            </select>
+          </mat-form-field>
+          <mat-form-field class="wide">
+            <mat-label>Description</mat-label>
+            <textarea matInput formControlName="description" rows="3"></textarea>
+          </mat-form-field>
+          <button mat-flat-button type="submit" [disabled]="busy() !== null || courseForm.pristine">
+            {{ busy() === 'course' ? 'Enregistrement…' : 'Enregistrer les informations' }}
+          </button>
+        </form>
+      </section>
+
+      <!-- ===== Modules and lessons ===== -->
+      <section class="card" aria-labelledby="content-title">
+        <h2 id="content-title">Contenu</h2>
+        @if (contentError(); as message) {
+          <p class="alert error" role="alert">{{ message }}</p>
+        }
+
+        @for (entry of o.modules; track entry.module.id) {
+          <div class="module">
+            @if (renamingModuleId() === entry.module.id) {
+              <ng-container *ngTemplateOutlet="moduleFormTpl" />
+            } @else {
+              <div class="module-head">
+                <h3>Module {{ entry.module.displayOrder }} · {{ entry.module.title }}</h3>
+                @if (entry.module.status === 'PUBLISHED') {
+                  <span class="hg-tag success">Publié</span>
+                } @else {
+                  <span class="hg-tag warning">Brouillon</span>
+                  <button mat-stroked-button type="button" [disabled]="busy() !== null" (click)="publishModule(entry.module)">
+                    Publier le module
+                  </button>
+                }
+                <button mat-button type="button" [disabled]="busy() !== null" (click)="openRename(entry)">Renommer</button>
+              </div>
+            }
+
+            <ul class="lessons">
+              @for (lesson of entry.lessons; track lesson.id) {
+                <li class="lesson">
+                  <span class="title">{{ lesson.title }}</span>
+                  @if (lesson.status === 'PUBLISHED') {
+                    <span class="hg-tag success">Publiée</span>
+                  } @else {
+                    <span class="hg-tag warning">Brouillon</span>
+                    <button mat-button type="button" [disabled]="busy() !== null" (click)="publishLesson(lesson)">Publier</button>
+                  }
+                  <a mat-stroked-button [routerLink]="['/trainer/courses', o.course.id, 'lessons', lesson.id]">Modifier</a>
+                </li>
+              } @empty {
+                <li class="muted small">Aucune leçon dans ce module.</li>
+              }
+            </ul>
+
+            @if (addingLessonTo() === entry.module.id) {
+              <form class="inline" [formGroup]="lessonForm" (ngSubmit)="saveLesson(entry.module.id)">
+                <mat-form-field>
+                  <mat-label>Titre de la nouvelle leçon</mat-label>
+                  <input matInput formControlName="title" />
+                  @if (lessonForm.controls.title.hasError('required')) {
+                    <mat-error>Le titre est obligatoire.</mat-error>
+                  }
+                </mat-form-field>
+                <button mat-flat-button type="submit" [disabled]="busy() !== null">Créer la leçon</button>
+                <button mat-button type="button" (click)="closeInlineForms()">Annuler</button>
+              </form>
+            } @else {
+              <button class="add" mat-button type="button" (click)="openNewLesson(entry.module.id)">+ Ajouter une leçon</button>
+            }
+          </div>
+        } @empty {
+          <p class="muted">Cette formation n'a pas encore de module.</p>
+        }
+
+        @if (addingModule()) {
+          <div class="module">
+            <ng-container *ngTemplateOutlet="moduleFormTpl" />
+          </div>
+        } @else {
+          <button mat-stroked-button type="button" (click)="openNewModule()">+ Ajouter un module</button>
+        }
+      </section>
+
+      <ng-template #moduleFormTpl>
+        <form class="inline" [formGroup]="moduleForm" (ngSubmit)="saveModule()">
+          <mat-form-field>
+            <mat-label>Titre du module</mat-label>
+            <input matInput formControlName="title" />
+            @if (moduleForm.controls.title.hasError('required')) {
+              <mat-error>Le titre est obligatoire.</mat-error>
+            }
+          </mat-form-field>
+          <mat-form-field>
+            <mat-label>Description (facultative)</mat-label>
+            <input matInput formControlName="description" />
+          </mat-form-field>
+          <button mat-flat-button type="submit" [disabled]="busy() !== null">
+            {{ renamingModuleId() === null ? 'Créer le module' : 'Enregistrer' }}
+          </button>
+          <button mat-button type="button" (click)="closeInlineForms()">Annuler</button>
+        </form>
+      </ng-template>
+    }
+  }
+}

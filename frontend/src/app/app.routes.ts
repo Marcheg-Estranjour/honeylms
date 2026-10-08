@@ -91,7 +91,6 @@ export const routes: Routes = [
           import('./features/trainer/trainer-submissions-page').then((m) => m.TrainerSubmissionsPage),
         title: 'Corrections' + TITLE_SUFFIX,
       },
-      // Course editor — S9-7.
       {
         path: 'trainer/assignments/:assignmentId',
         canActivate: [roleGuard('TRAINER')],
@@ -102,7 +101,14 @@ export const routes: Routes = [
       {
         path: 'trainer/courses/:courseId',
         canActivate: [roleGuard('TRAINER')],
-        ...comingSoon('Gérer la formation', 'S9'),
+        loadComponent: () => import('./features/trainer/course-editor-page').then((m) => m.CourseEditorPage),
+        title: 'Gérer la formation' + TITLE_SUFFIX,
+      },
+      // Lesson editor (content + resources) — S9-7b.
+      {
+        path: 'trainer/courses/:courseId/lessons/:lessonId',
+        canActivate: [roleGuard('TRAINER')],
+        ...comingSoon('Modifier la leçon', 'S9'),
       },
 
       // Admin
