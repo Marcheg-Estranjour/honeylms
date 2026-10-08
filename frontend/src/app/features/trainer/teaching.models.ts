@@ -41,3 +41,10 @@ export interface EnrolledStudent {
   email: string;
   enrolledAt: string;
 }
+
+/** Backend record `CorrectionRequest` — PATCH /api/submissions/{id}/correction. */
+export interface CorrectionRequest {
+  /** 0 to 20, at most 2 decimals (DECIMAL(4,2)); null = no grade. */
+  grade: number | null;
+  feedback: string | null;
+}

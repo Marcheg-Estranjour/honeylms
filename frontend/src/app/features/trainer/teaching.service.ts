@@ -1,7 +1,8 @@
 import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
-import { EnrolledStudent, ManagedAssignmentSummary, ManagedCourseSummary } from './teaching.models';
+import { AssignmentDetail, SubmissionDetail } from '../learning/learning.models';
+import { CorrectionRequest, EnrolledStudent, ManagedAssignmentSummary, ManagedCourseSummary } from './teaching.models';
 
 /**
  * Trainer workspace (also usable by an Admin): the backend restricts the lists to the
@@ -24,5 +25,20 @@ export class TeachingService {
   /** G10 — students enrolled in a course, sorted by name. */
   getStudents(courseId: number): Observable<EnrolledStudent[]> {
     return this.http.get<EnrolledStudent[]>(`/api/courses/${courseId}/students`);
+  }
+
+  /** Assignment detail (instructions, deadline, attached files); 403 outside the trainer's courses. */
+  getAssignment(assignmentId: number): Observable<AssignmentDetail> {
+    return this.http.get<AssignmentDetail>(`/api/assignments/${assignmentId}`);
+  }
+
+  /** US-SUB-05 — submissions of an assignment, most recent first. */
+  listSubmissions(assignmentId: number): Observable<SubmissionDetail[]> {
+    return this.http.get<SubmissionDetail[]>(`/api/assignments/${assignmentId}/submissions`);
+  }
+
+  /** US-SUB-06/07 — grade (optional, 0–20) and feedback; correcting again overwrites. */
+  correct(submissionId: number, body: CorrectionRequest): Observable<SubmissionDetail> {
+    return this.http.patch<SubmissionDetail>(`/api/submissions/${submissionId}/correction`, body);
   }
 }

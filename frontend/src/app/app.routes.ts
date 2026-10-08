@@ -91,11 +91,13 @@ export const routes: Routes = [
           import('./features/trainer/trainer-submissions-page').then((m) => m.TrainerSubmissionsPage),
         title: 'Corrections' + TITLE_SUFFIX,
       },
-      // Grading screen — S9-6b; course editor — S9-7.
+      // Course editor — S9-7.
       {
         path: 'trainer/assignments/:assignmentId',
         canActivate: [roleGuard('TRAINER')],
-        ...comingSoon('Corriger un devoir', 'S9'),
+        loadComponent: () =>
+          import('./features/trainer/trainer-assignment-page').then((m) => m.TrainerAssignmentPage),
+        title: 'Corriger un devoir' + TITLE_SUFFIX,
       },
       {
         path: 'trainer/courses/:courseId',
