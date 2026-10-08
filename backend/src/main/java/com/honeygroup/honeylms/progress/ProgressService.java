@@ -11,6 +11,7 @@ import com.honeygroup.honeylms.course.Lesson;
 import com.honeygroup.honeylms.course.LessonNotFoundException;
 import com.honeygroup.honeylms.course.LessonRepository;
 import com.honeygroup.honeylms.course.ModuleNotFoundException;
+import com.honeygroup.honeylms.progress.dto.CourseCompletions;
 import com.honeygroup.honeylms.progress.dto.CourseProgress;
 import com.honeygroup.honeylms.progress.dto.LessonCompletionDetail;
 import com.honeygroup.honeylms.progress.dto.ModuleProgress;
@@ -126,6 +127,32 @@ public class ProgressService {
 
         LessonCompletion last = mostRecent.get(0);
         return new ResumeResponse(last.getLesson().getId(), last.getLesson().getCourseModule().getId(), last.getLastViewedAt());
+    }
+
+    /**
+     * Gap G1 — ids of the accessible lessons of the course that the Student has completed.
+     * Same access rule and same "accessible" definition as getCourseProgress, so the check
+     * marks shown in the lesson view always match the percentage.
+     */
+    @Transactional(readOnly = true)
+    public CourseCompletions getCourseCompletions(Long courseId, String studentEmail) {
+        Course course = courseRepository.findById(courseId)
+                .orElseThrow(() -> new CourseNotFoundException(courseId));
+        UserAccount student = courseAuthorizationService.resolveRequester(studentEmail);
+        learningAccessService.assertStudentCanAccessCourse(course, student);
+
+        List<Lesson> accessible = lessonRepository.findAccessibleLessonsByCourse(courseId);
+        if (accessible.isEmpty()) {
+            return new CourseCompletions(courseId, List.of());
+        }
+
+        List<Long> completedIds = completionRepository
+                .findByStudent_IdAndLesson_InAndCompletedAtIsNotNull(student.getId(), accessible)
+                .stream()
+                .map(completion -> completion.getLesson().getId())
+                .sorted()
+                .toList();
+        return new CourseCompletions(courseId, completedIds);
     }
 
     // ---- helpers ----

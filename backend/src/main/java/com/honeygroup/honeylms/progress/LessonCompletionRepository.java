@@ -12,6 +12,8 @@ public interface LessonCompletionRepository extends JpaRepository<LessonCompleti
 
     long countByStudent_IdAndLesson_InAndCompletedAtIsNotNull(Long studentId, List<Lesson> lessons);
 
+    List<LessonCompletion> findByStudent_IdAndLesson_InAndCompletedAtIsNotNull(Long studentId, List<Lesson> lessons);
+
     List<LessonCompletion> findByStudent_IdAndLesson_CourseModule_Course_IdOrderByLastViewedAtDesc(
             Long studentId, Long courseId, Pageable pageable);
 }

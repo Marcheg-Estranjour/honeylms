@@ -1,5 +1,6 @@
 package com.honeygroup.honeylms.progress;
 
+import com.honeygroup.honeylms.progress.dto.CourseCompletions;
 import com.honeygroup.honeylms.progress.dto.CourseProgress;
 import com.honeygroup.honeylms.progress.dto.LessonCompletionDetail;
 import com.honeygroup.honeylms.progress.dto.ModuleProgress;
@@ -47,6 +48,13 @@ public class ProgressController {
     public ResponseEntity<ModuleProgress> moduleProgress(@PathVariable Long moduleId,
                                                            Authentication authentication) {
         return ResponseEntity.ok(progressService.getModuleProgress(moduleId, authentication.getName()));
+    }
+
+    /** Gap G1 — completed lessons of the course (check marks of the lesson view). */
+    @GetMapping("/api/courses/{courseId}/completions")
+    public ResponseEntity<CourseCompletions> courseCompletions(@PathVariable Long courseId,
+                                                                 Authentication authentication) {
+        return ResponseEntity.ok(progressService.getCourseCompletions(courseId, authentication.getName()));
     }
 
     /** US-PROGRESS-04 — Resume learning. */
