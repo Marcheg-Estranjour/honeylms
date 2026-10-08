@@ -2,7 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { CourseCategory, CourseDetail } from '../../shared/courses/course.models';
-import { LessonDetail, ModuleDetail } from '../learning/learning.models';
+import { LessonDetail, ModuleDetail, ResourceDetail } from '../learning/learning.models';
 
 /** Body of PUT /api/courses/{id} (backend record `UpdateCourseRequest`). */
 export interface CourseForm {
@@ -67,5 +67,18 @@ export class CourseEditorService {
 
   publishLesson(lessonId: number): Observable<LessonDetail> {
     return this.http.patch<LessonDetail>(`/api/lessons/${lessonId}/publish`, null);
+  }
+
+  /** US-FILE-01 — multipart: « title » field + « file » part. Added at the end of the list. */
+  uploadResource(lessonId: number, title: string, file: File): Observable<ResourceDetail> {
+    const body = new FormData();
+    body.append('title', title);
+    body.append('file', file, file.name);
+    return this.http.post<ResourceDetail>(`/api/lessons/${lessonId}/resources`, body);
+  }
+
+  /** US-FILE-03 — deletes the resource and its stored file (204). */
+  deleteResource(resourceId: number): Observable<void> {
+    return this.http.delete<void>(`/api/resources/${resourceId}`);
   }
 }
