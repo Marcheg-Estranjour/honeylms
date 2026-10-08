@@ -1,5 +1,6 @@
 package com.honeygroup.honeylms.common;
 
+import com.honeygroup.honeylms.course.AssignmentFileNotFoundException;
 import com.honeygroup.honeylms.course.AssignmentNotFoundException;
 import com.honeygroup.honeylms.course.CourseNotFoundException;
 import com.honeygroup.honeylms.course.InvalidTrainerAssignmentException;
@@ -12,6 +13,7 @@ import com.honeygroup.honeylms.enrollment.AlreadyEnrolledException;
 import com.honeygroup.honeylms.file.InvalidFileException;
 import com.honeygroup.honeylms.progress.NoResumePointException;
 import com.honeygroup.honeylms.submission.AlreadySubmittedException;
+import com.honeygroup.honeylms.submission.NoSubmissionYetException;
 import com.honeygroup.honeylms.submission.SubmissionDeadlinePassedException;
 import com.honeygroup.honeylms.submission.SubmissionNotFoundException;
 import com.honeygroup.honeylms.trainingclass.AlreadyClassMemberException;
@@ -109,6 +111,18 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(SubmissionNotFoundException.class)
     public ResponseEntity<ApiError> handleSubmissionNotFound(SubmissionNotFoundException ex,
                                                                HttpServletRequest request) {
+        return build(HttpStatus.NOT_FOUND, ex.getMessage(), request);
+    }
+
+    @ExceptionHandler(NoSubmissionYetException.class)
+    public ResponseEntity<ApiError> handleNoSubmissionYet(NoSubmissionYetException ex,
+                                                            HttpServletRequest request) {
+        return build(HttpStatus.NOT_FOUND, ex.getMessage(), request);
+    }
+
+    @ExceptionHandler(AssignmentFileNotFoundException.class)
+    public ResponseEntity<ApiError> handleAssignmentFileNotFound(AssignmentFileNotFoundException ex,
+                                                                   HttpServletRequest request) {
         return build(HttpStatus.NOT_FOUND, ex.getMessage(), request);
     }
 

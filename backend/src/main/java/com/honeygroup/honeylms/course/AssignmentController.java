@@ -72,4 +72,13 @@ public class AssignmentController {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(assignmentService.attachFile(assignmentId, file, authentication.getName()));
     }
+
+    /** Gap G4 — download a file attached to the assignment. Role-aware (see AssignmentService). */
+    @GetMapping("/api/assignments/{assignmentId}/files/{storedFileId}")
+    public ResponseEntity<org.springframework.core.io.Resource> downloadAttachedFile(@PathVariable Long assignmentId,
+                                                                                      @PathVariable Long storedFileId,
+                                                                                      Authentication authentication) {
+        return assignmentService.downloadAttachedFile(assignmentId, storedFileId, authentication.getName())
+                .toAttachmentResponse();
+    }
 }

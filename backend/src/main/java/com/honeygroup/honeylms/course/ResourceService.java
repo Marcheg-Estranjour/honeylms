@@ -1,6 +1,7 @@
 package com.honeygroup.honeylms.course;
 
 import com.honeygroup.honeylms.course.dto.ResourceDetail;
+import com.honeygroup.honeylms.file.DownloadableFile;
 import com.honeygroup.honeylms.file.FileStorageService;
 import com.honeygroup.honeylms.file.StoredFile;
 import com.honeygroup.honeylms.file.StoredFileRepository;
@@ -72,14 +73,14 @@ public class ResourceService {
      * or a Student with access to the Lesson this resource belongs to.
      */
     @Transactional(readOnly = true)
-    public DownloadableResource downloadResource(Long resourceId, String requesterEmail) {
+    public DownloadableFile downloadResource(Long resourceId, String requesterEmail) {
         com.honeygroup.honeylms.course.Resource resource = findResourceOrThrow(resourceId);
         UserAccount requester = courseAuthorizationService.resolveRequester(requesterEmail);
         assertCanAccess(resource.getLesson(), requester);
 
         StoredFile storedFile = resource.getStoredFile();
         Resource content = fileStorageService.load(storedFile.getStorageKey());
-        return new DownloadableResource(content, storedFile.getOriginalName(), storedFile.getMimeType());
+        return new DownloadableFile(content, storedFile.getOriginalName(), storedFile.getMimeType());
     }
 
     /**
@@ -141,6 +142,4 @@ public class ResourceService {
         );
     }
 
-    public record DownloadableResource(Resource content, String originalFileName, String mimeType) {
-    }
 }

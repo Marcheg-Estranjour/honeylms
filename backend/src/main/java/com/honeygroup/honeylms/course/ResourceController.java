@@ -44,13 +44,7 @@ public class ResourceController {
     @GetMapping("/api/resources/{resourceId}/download")
     public ResponseEntity<org.springframework.core.io.Resource> downloadResource(
             @PathVariable Long resourceId, Authentication authentication) {
-        ResourceService.DownloadableResource download =
-                resourceService.downloadResource(resourceId, authentication.getName());
-
-        return ResponseEntity.ok()
-                .contentType(MediaType.parseMediaType(download.mimeType()))
-                .header("Content-Disposition", "attachment; filename=\"" + download.originalFileName() + "\"")
-                .body(download.content());
+        return resourceService.downloadResource(resourceId, authentication.getName()).toAttachmentResponse();
     }
 
     /** US-FILE-03 — Delete resource. TRAINER/ADMIN only. */

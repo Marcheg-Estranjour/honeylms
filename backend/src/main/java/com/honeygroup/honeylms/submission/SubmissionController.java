@@ -51,6 +51,21 @@ public class SubmissionController {
         return ResponseEntity.ok(submissionService.getSubmission(submissionId, authentication.getName()));
     }
 
+    /** Gap G2 — my submission for this assignment (404 when nothing submitted yet). STUDENT only. */
+    @GetMapping("/api/assignments/{assignmentId}/submissions/me")
+    public ResponseEntity<SubmissionDetail> getMySubmission(@PathVariable Long assignmentId,
+                                                              Authentication authentication) {
+        return ResponseEntity.ok(submissionService.getMySubmission(assignmentId, authentication.getName()));
+    }
+
+    /** Gap G3 — download the submitted file. Owner Student, or Trainer/Admin of the perimeter. */
+    @GetMapping("/api/submissions/{submissionId}/file")
+    public ResponseEntity<org.springframework.core.io.Resource> downloadFile(@PathVariable Long submissionId,
+                                                                              Authentication authentication) {
+        return submissionService.downloadSubmissionFile(submissionId, authentication.getName())
+                .toAttachmentResponse();
+    }
+
     /** US-SUB-04 — View submissions. TRAINER/ADMIN of the perimeter only. */
     @GetMapping("/api/assignments/{assignmentId}/submissions")
     public ResponseEntity<List<SubmissionDetail>> listSubmissions(@PathVariable Long assignmentId,

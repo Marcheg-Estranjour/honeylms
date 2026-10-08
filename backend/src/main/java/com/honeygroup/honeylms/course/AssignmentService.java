@@ -4,6 +4,7 @@ import com.honeygroup.honeylms.course.dto.AssignmentDetail;
 import com.honeygroup.honeylms.course.dto.AttachedFileSummary;
 import com.honeygroup.honeylms.course.dto.CreateAssignmentRequest;
 import com.honeygroup.honeylms.course.dto.UpdateAssignmentRequest;
+import com.honeygroup.honeylms.file.DownloadableFile;
 import com.honeygroup.honeylms.file.FileStorageService;
 import com.honeygroup.honeylms.file.StoredFile;
 import com.honeygroup.honeylms.file.StoredFileRepository;
@@ -120,6 +121,30 @@ public class AssignmentService {
             courseAuthorizationService.assertCanManageCourse(assignment.getLesson().getCourseModule().getCourse(), requester);
         }
         return toDetail(assignment);
+    }
+
+    /**
+     * Gap G4 — download a file attached to an assignment. Same access rule as getAssignment:
+     * enrolled Student on a published assignment, or Trainer/Admin of the perimeter.
+     * The file is looked up THROUGH the assignment: a storedFileId belonging to another
+     * assignment (or to a submission) answers 404 — no IDOR on stored files.
+     */
+    @Transactional(readOnly = true)
+    public DownloadableFile downloadAttachedFile(Long assignmentId, Long storedFileId, String requesterEmail) {
+        Assignment assignment = findAssignmentOrThrow(assignmentId);
+        UserAccount requester = courseAuthorizationService.resolveRequester(requesterEmail);
+
+        if (learningAccessService.isStudent(requester)) {
+            learningAccessService.assertStudentCanAccessAssignment(assignment, requester);
+        } else {
+            courseAuthorizationService.assertCanManageCourse(assignment.getLesson().getCourseModule().getCourse(), requester);
+        }
+
+        AssignmentFile attached = assignmentFileRepository
+                .findByAssignment_IdAndStoredFile_Id(assignmentId, storedFileId)
+                .orElseThrow(() -> new AssignmentFileNotFoundException(assignmentId, storedFileId));
+        StoredFile file = attached.getStoredFile();
+        return new DownloadableFile(fileStorageService.load(file.getStorageKey()), file.getOriginalName(), file.getMimeType());
     }
 
     @Transactional(readOnly = true)
