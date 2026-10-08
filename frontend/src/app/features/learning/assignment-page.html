@@ -1,0 +1,226 @@
+@switch (view().state) {
+  @case ('loading') {
+    <p class="muted" role="status">Chargement du devoir…</p>
+  }
+  @case ('error') {
+    @if (view(); as v) {
+      @if (v.state === 'error') {
+        <div class="muted" role="alert">
+          <p>{{ v.message }}</p>
+          <a mat-stroked-button routerLink="/my-courses">Retour à mes cours</a>
+        </div>
+      }
+    }
+  }
+  @case ('ready') {
+    @if (view(); as v) {
+      @if (v.state === 'ready') {
+        <nav class="crumbs" aria-label="Fil d'Ariane">
+          @if (v.value.courseTitle) {
+            <a [routerLink]="['/courses', courseId()]">{{ v.value.courseTitle }}</a>
+            <span aria-hidden="true">/</span>
+          }
+          <a [routerLink]="['/courses', courseId(), 'lessons', v.value.assignment.lessonId]">
+            {{ v.value.lessonTitle ?? 'Leçon' }}
+          </a>
+          <span aria-hidden="true">/</span>
+          <span aria-current="page">Devoir</span>
+        </nav>
+
+        <header class="head">
+          <h1>{{ v.value.assignment.title }}</h1>
+          @if (status(); as s) {
+            <span class="hg-tag" [class]="s.tone">{{ s.label }}</span>
+          }
+        </header>
+
+        <p class="due" [class.late]="pastDue()">
+          @if (v.value.assignment.dueDate; as due) {
+            <strong>Date limite :</strong> {{ due | date: "EEEE d MMMM y 'à' HH:mm" }}
+            @if (pastDue()) {
+              (dépassée)
+            }
+          } @else {
+            Pas de date limite.
+          }
+        </p>
+
+        <div class="layout">
+          <main class="main">
+            <!-- ===== Instructions (plain text, never HTML) ===== -->
+            <section class="card" aria-labelledby="brief-title">
+              <h2 id="brief-title">Consigne</h2>
+              @if (v.value.assignment.description) {
+                <p class="text">{{ v.value.assignment.description }}</p>
+              } @else {
+                <p class="muted">Pas de consigne détaillée : voir la leçon associée.</p>
+              }
+
+              @if (v.value.assignment.files.length) {
+                <h3>Fichiers joints</h3>
+                <ul class="files">
+                  @for (f of v.value.assignment.files; track f.storedFileId) {
+                    <li class="file">
+                      <span class="type">{{ fileTypeLabel(f.originalName) }}</span>
+                      <span class="name">
+                        {{ f.originalName }}
+                        <span class="meta">{{ f.sizeBytes | fileSize }}</span>
+                      </span>
+                      <button
+                        mat-stroked-button
+                        type="button"
+                        [disabled]="downloading() === 'a-' + f.storedFileId"
+                        [attr.aria-label]="'Télécharger ' + f.originalName"
+                        (click)="downloadAttached(f)"
+                      >
+                        {{ downloading() === 'a-' + f.storedFileId ? 'Téléchargement…' : 'Télécharger' }}
+                      </button>
+                    </li>
+                  }
+                </ul>
+              }
+            </section>
+
+            <!-- ===== My submission ===== -->
+            <section class="card" aria-labelledby="mine-title">
+              <h2 id="mine-title">Mon dépôt</h2>
+
+              @if (downloadError(); as message) {
+                <p class="alert error" role="alert">{{ message }}</p>
+              }
+              @if (notice(); as message) {
+                <p class="alert ok" role="status">{{ message }}</p>
+              }
+
+              @if (mine() === 'error') {
+                <p class="alert error" role="alert">
+                  Votre dépôt n'a pas pu être chargé. Rechargez la page avant de déposer un fichier.
+                </p>
+              } @else if (submission(); as s) {
+                <div class="file current">
+                  <span class="type">{{ fileTypeLabel(s.originalFileName) }}</span>
+                  <span class="name">
+                    {{ s.originalFileName }}
+                    <span class="meta">
+                      {{ s.sizeBytes | fileSize }} · Déposé le {{ s.submittedAt | date: "d MMMM y 'à' HH:mm" }}
+                    </span>
+                  </span>
+                  <button
+                    mat-stroked-button
+                    type="button"
+                    [disabled]="downloading() === 'mine'"
+                    [attr.aria-label]="'Télécharger mon fichier ' + s.originalFileName"
+                    (click)="downloadMine(s)"
+                  >
+                    {{ downloading() === 'mine' ? 'Téléchargement…' : 'Télécharger' }}
+                  </button>
+                </div>
+              } @else if (pastDue()) {
+                <p class="muted">Aucun fichier n'a été déposé pour ce devoir.</p>
+              }
+
+              @if (pastDue()) {
+                <p class="muted small">La date limite est dépassée : le dépôt n'est plus possible.</p>
+              } @else if (canUpload()) {
+                @if (pending(); as file) {
+                  <!-- Step 2: explicit confirmation before anything is sent -->
+                  <div class="confirm" role="group" aria-labelledby="confirm-title">
+                    <p id="confirm-title">
+                      Fichier sélectionné : <strong>{{ file.name }}</strong> ({{ file.size | fileSize }})
+                    </p>
+                    @if (submission()?.status === 'CORRECTED') {
+                      <p class="alert warn">
+                        Ce devoir a déjà été corrigé : remplacer le fichier supprimera la note et le commentaire
+                        du formateur.
+                      </p>
+                    }
+                    <div class="buttons">
+                      <button mat-flat-button type="button" [disabled]="uploading()" (click)="send()">
+                        @if (uploading()) {
+                          Envoi en cours…
+                        } @else if (submission()?.status === 'CORRECTED') {
+                          Remplacer et réinitialiser la correction
+                        } @else if (submission()) {
+                          Remplacer mon fichier
+                        } @else {
+                          Déposer ce fichier
+                        }
+                      </button>
+                      <button mat-stroked-button type="button" [disabled]="uploading()" (click)="cancel()">Annuler</button>
+                    </div>
+                  </div>
+                } @else {
+                  <!-- Step 1: choose a file (button or drag & drop) -->
+                  <div
+                    class="drop"
+                    [class.dragging]="dragging()"
+                    (dragover)="onDragOver($event)"
+                    (dragleave)="dragging.set(false)"
+                    (drop)="onDrop($event)"
+                  >
+                    <p>
+                      <strong>{{ submission() ? 'Remplacer le fichier' : 'Déposer votre travail' }}</strong>
+                      — glissez un fichier ici ou
+                    </p>
+                    <button mat-stroked-button type="button" (click)="fileInput.click()">Choisir un fichier</button>
+                    <input
+                      #fileInput
+                      class="sr-only"
+                      type="file"
+                      tabindex="-1"
+                      aria-hidden="true"
+                      [accept]="accept"
+                      (change)="onFileInput($event)"
+                    />
+                    <p class="meta">Formats : {{ formats }} · {{ maxSize }} maximum</p>
+                  </div>
+                  @if (fileError(); as message) {
+                    <p class="alert error" role="alert">{{ message }}</p>
+                  }
+                }
+
+                @if (uploadError(); as message) {
+                  <p class="alert error" role="alert">{{ message }}</p>
+                }
+                @if (submission()) {
+                  <p class="muted small">
+                    Remplacer le fichier réinitialise la correction. Possible jusqu'à la date limite.
+                  </p>
+                }
+              }
+            </section>
+          </main>
+
+          <!-- ===== Correction (US-SUB-03) ===== -->
+          <aside class="card correction" aria-labelledby="correction-title">
+            <h2 id="correction-title">Correction</h2>
+            @if (submission(); as s) {
+              @if (s.status === 'CORRECTED') {
+                <p class="grade">
+                  @if (s.grade !== null) {
+                    <strong>{{ s.grade | number: '1.0-2' }}</strong> / 20
+                  } @else {
+                    <span class="muted">Pas de note</span>
+                  }
+                </p>
+                <h3>Commentaire du formateur</h3>
+                @if (s.feedback) {
+                  <p class="text">{{ s.feedback }}</p>
+                } @else {
+                  <p class="muted">Pas de commentaire.</p>
+                }
+                @if (s.correctedAt) {
+                  <p class="meta">Corrigé le {{ s.correctedAt | date: "d MMMM y 'à' HH:mm" }}</p>
+                }
+              } @else {
+                <p class="muted">En attente de correction.</p>
+              }
+            } @else {
+              <p class="muted">La correction apparaîtra ici une fois votre devoir déposé et corrigé.</p>
+            }
+          </aside>
+        </div>
+      }
+    }
+  }
+}
