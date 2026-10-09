@@ -266,6 +266,35 @@ npx ng test --watch=false
 
 L'application appelle toujours l'API en **relatif** (`/api/...`). Aucune URL de backend n'est écrite dans le code.
 
+### Tests de bout en bout (Playwright)
+
+Les parcours critiques de la démo sont rejoués dans un vrai navigateur (`e2e/`) :
+étudiant (inscription, leçon terminée, dépôt de devoir), formateur (notation, correction
+visible par l'étudiant), admin (désactivation d'un compte). Ils tournent **en local**, sur la
+stack complète, avant chaque démo ou livraison (pas dans la CI pour le MVP).
+
+```bash
+# une seule fois
+npm install -D @playwright/test
+npx playwright install chromium
+
+# à chaque fois
+docker compose up -d          # depuis la racine : PostgreSQL + backend (profil dev, jeu de démo)
+cd frontend && npm run e2e    # lance ng serve si besoin, puis les tests
+npm run e2e:report            # rapport HTML (traces et captures en cas d'échec)
+```
+
+> **Ubuntu 20.04** : Playwright ne fournit plus de navigateur pour cette version
+> (`does not support chromium on ubuntu20.04-x64`). Deux solutions :
+> - **conteneur officiel Playwright** (navigateurs inclus) : `npm start` dans un terminal, puis
+>   `npm run e2e:docker` dans un autre (script `e2e/run-in-docker.sh`, image alignée sur la
+>   version de `@playwright/test`) ;
+> - ou le Google Chrome du poste : `PW_CHANNEL=chrome npm run e2e`.
+
+Chaque exécution crée sa propre étudiante (`e2e.<horodatage>@honeylms.test`), désactivée à la
+fin : les tests sont rejouables sur la même base. Pour repartir d'une base propre :
+`docker compose down -v && docker compose up -d`.
+
 ---
 
 ## 5. Charte graphique (issue des mock-ups)
