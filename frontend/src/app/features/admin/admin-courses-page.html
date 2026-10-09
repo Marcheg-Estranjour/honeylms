@@ -1,0 +1,142 @@
+<div class="head">
+  <h1>Formations</h1>
+  @if (!creating()) {
+    <button mat-flat-button type="button" (click)="openCreate()">Créer une formation</button>
+  }
+</div>
+
+@if (creating()) {
+  <section class="card" aria-labelledby="create-title">
+    <h2 id="create-title">Nouvelle formation</h2>
+    <form class="create" [formGroup]="courseForm" (ngSubmit)="createCourse()">
+      <mat-form-field>
+        <mat-label>Titre</mat-label>
+        <input matInput formControlName="title" autocomplete="off" />
+        @if (courseForm.controls.title.hasError('required')) {
+          <mat-error>Le titre est obligatoire.</mat-error>
+        }
+      </mat-form-field>
+      <mat-form-field>
+        <mat-label>Domaine</mat-label>
+        <select matNativeControl formControlName="category">
+          @for (c of categories; track c.code) {
+            <option [value]="c.code">{{ c.label }}</option>
+          }
+        </select>
+      </mat-form-field>
+      <mat-form-field class="wide">
+        <mat-label>Description (facultative)</mat-label>
+        <textarea matInput formControlName="description" rows="3"></textarea>
+      </mat-form-field>
+      @if (createError(); as message) {
+        <p class="alert error wide" role="alert">{{ message }}</p>
+      }
+      <div class="buttons wide">
+        <button mat-flat-button type="submit" [disabled]="saving()">{{ saving() ? 'Création…' : 'Créer la formation' }}</button>
+        <button mat-button type="button" [disabled]="saving()" (click)="cancelCreate()">Annuler</button>
+      </div>
+    </form>
+  </section>
+}
+
+@if (notice(); as message) {
+  <p class="alert ok" role="status">{{ message }}</p>
+}
+
+@switch (state()) {
+  @case ('loading') {
+    <p class="muted" role="status">Chargement des formations…</p>
+  }
+  @case ('error') {
+    <div class="muted" role="alert">
+      <p>Les formations n'ont pas pu être chargées.</p>
+      <button mat-stroked-button type="button" (click)="load()">Réessayer</button>
+    </div>
+  }
+  @case ('ready') {
+    @if (trainers() === null) {
+      <p class="alert warn">La liste des formateurs n'a pas pu être chargée : l'attribution est indisponible.</p>
+    }
+    <ul class="list">
+      @for (c of courses(); track c.id) {
+        <li class="course">
+          <div class="row">
+            <div class="main">
+              <h2>{{ c.title }}</h2>
+              <p class="meta">
+                {{ categoryLabel(c.category) }} · {{ c.enrolledStudents }}
+                {{ c.enrolledStudents > 1 ? 'inscrits' : 'inscrit' }}
+              </p>
+            </div>
+            @if (c.status === 'PUBLISHED') {
+              <span class="hg-tag success">Publiée</span>
+            } @else {
+              <span class="hg-tag warning">Brouillon</span>
+            }
+            <button
+              mat-stroked-button
+              type="button"
+              [attr.aria-expanded]="openId() === c.id"
+              [attr.aria-controls]="'trainers-' + c.id"
+              (click)="togglePanel(c)"
+            >
+              Formateurs
+            </button>
+            <a mat-stroked-button [routerLink]="['/trainer/courses', c.id]">Modifier le contenu</a>
+          </div>
+
+          @if (openId() === c.id) {
+            <div class="panel" [id]="'trainers-' + c.id">
+              @switch (panel().state) {
+                @case ('loading') {
+                  <p class="muted" role="status">Chargement des formateurs…</p>
+                }
+                @case ('error') {
+                  <p class="alert error" role="alert">Les formateurs de cette formation n'ont pas pu être chargés.</p>
+                }
+                @case ('ready') {
+                  @if (panel(); as p) {
+                    @if (p.state === 'ready') {
+                      <ul class="trainers">
+                        @for (t of p.list; track t.id) {
+                          <li>
+                            <span><strong>{{ t.firstName }} {{ t.lastName }}</strong> <span class="meta">{{ t.email }}</span></span>
+                            <button mat-button type="button" [disabled]="panelBusy()" [attr.aria-label]="'Retirer ' + t.firstName + ' ' + t.lastName" (click)="unassign(c, t)">
+                              Retirer
+                            </button>
+                          </li>
+                        } @empty {
+                          <li class="muted">Aucun formateur : personne ne peut gérer le contenu de cette formation.</li>
+                        }
+                      </ul>
+                      @if (trainers() !== null) {
+                        <div class="assign">
+                          <select aria-label="Formateur à attribuer" [disabled]="panelBusy() || assignable().length === 0" (change)="onSelectTrainer($event)">
+                            <option value="" [selected]="selectedTrainerId() === null">
+                              {{ assignable().length ? 'Choisir un formateur…' : 'Tous les formateurs actifs sont attribués' }}
+                            </option>
+                            @for (t of assignable(); track t.id) {
+                              <option [value]="t.id" [selected]="selectedTrainerId() === t.id">{{ t.firstName }} {{ t.lastName }}</option>
+                            }
+                          </select>
+                          <button mat-flat-button type="button" [disabled]="panelBusy() || selectedTrainerId() === null" (click)="assign(c)">
+                            Attribuer
+                          </button>
+                        </div>
+                      }
+                      @if (panelError(); as message) {
+                        <p class="alert error" role="alert">{{ message }}</p>
+                      }
+                    }
+                  }
+                }
+              }
+            </div>
+          }
+        </li>
+      } @empty {
+        <li class="muted">Aucune formation pour le moment.</li>
+      }
+    </ul>
+  }
+}

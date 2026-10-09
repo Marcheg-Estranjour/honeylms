@@ -1,0 +1,156 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.head {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+
+  h1 {
+    margin: 0;
+  }
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 20px 24px;
+  border: 1px solid var(--hg-border);
+  border-radius: 16px;
+  background: #fff;
+
+  h2 {
+    margin: 0;
+    font-size: 18px;
+  }
+}
+
+.create {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+  gap: 4px 16px;
+
+  .wide {
+    grid-column: 1 / -1;
+  }
+}
+
+.buttons,
+.assign {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.assign select {
+  min-width: 240px;
+  padding: 8px 10px;
+  border: 1px solid var(--hg-border);
+  border-radius: 8px;
+  font: inherit;
+  background: #fff;
+}
+
+.list,
+.trainers {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.course {
+  border: 1px solid var(--hg-border);
+  border-radius: 14px;
+  background: #fff;
+}
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 18px;
+}
+
+.main {
+  flex: 1 1 260px;
+  min-width: 0;
+
+  h2 {
+    margin: 0 0 2px;
+    font-size: 16px;
+  }
+}
+
+.meta {
+  margin: 0;
+  font-size: 13px;
+  color: var(--hg-muted);
+}
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px 18px 18px;
+  border-top: 1px solid var(--hg-border);
+  background: var(--hg-sand);
+  border-radius: 0 0 14px 14px;
+}
+
+.trainers {
+  gap: 6px;
+
+  li {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+  }
+}
+
+.alert {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 12px;
+  font-weight: 600;
+
+  &.error {
+    color: #8a1c12;
+    background: #fdecea;
+  }
+
+  &.warn {
+    color: #7a3a06;
+    background: #fdebd9;
+  }
+
+  &.ok {
+    color: #1f6a2b;
+    background: #e3f4e1;
+  }
+}
+
+.muted {
+  color: var(--hg-muted);
+
+  p {
+    margin: 0 0 12px;
+  }
+}
+
+@media (max-width: 700px) {
+  .create {
+    grid-template-columns: 1fr;
+  }
+}

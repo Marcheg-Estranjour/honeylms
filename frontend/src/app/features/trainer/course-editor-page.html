@@ -5,13 +5,13 @@
   @case ('error') {
     <div class="muted" role="alert">
       <p>{{ errorMessage() }}</p>
-      <a mat-stroked-button routerLink="/trainer/courses">Retour à mes formations</a>
+      <a mat-stroked-button [routerLink]="home.url">Retour à {{ home.label.toLowerCase() }}</a>
     </div>
   }
   @case ('ready') {
     @if (outline(); as o) {
       <nav class="crumbs" aria-label="Fil d'Ariane">
-        <a routerLink="/trainer/courses">Mes formations</a>
+        <a [routerLink]="home.url">{{ home.label }}</a>
         <span aria-hidden="true">/</span>
         <span aria-current="page">{{ o.course.title }}</span>
       </nav>
