@@ -38,7 +38,18 @@ services:
       postgres:
         condition: service_healthy
 
-# Le service "frontend" (Angular) sera ajouté quand le squelette Angular sera créé.
+  # Production-like front: Angular build served by nginx, /api relayed to "backend".
+  # Demo: http://localhost:8000   (development stays on « npm start », http://localhost:4200)
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: honeylms-frontend
+    restart: unless-stopped
+    ports:
+      - "${FRONTEND_PORT:-8000}:8080"
+    depends_on:
+      - backend
 
 volumes:
   honeylms-postgres-data:

@@ -8,7 +8,13 @@ import { defineConfig, devices } from '@playwright/test';
  * CHOIX TECHNIQUE : not run in GitHub Actions for the MVP — it needs the whole stack
  * (database, backend, seed). Unit tests (Vitest, JUnit) stay the CI safety net.
  * Tests create their own uniquely named student, so they can be replayed on the same database.
+ *
+ * E2E_BASE_URL=http://localhost:8000 → run against the production-like Docker image (nginx)
+ * instead of ng serve (no dev server is started in that case).
  */
+const baseURL = process.env['E2E_BASE_URL'] || 'http://localhost:4200';
+const useDevServer = !process.env['E2E_BASE_URL'];
+
 export default defineConfig({
   testDir: './e2e',
   fullyParallel: false,
@@ -18,7 +24,7 @@ export default defineConfig({
   expect: { timeout: 7_000 },
   reporter: [['list'], ['html', { open: 'never' }]],
   use: {
-    baseURL: 'http://localhost:4200',
+    baseURL,
     locale: 'fr-FR',
     timezoneId: 'Europe/Paris',
     trace: 'retain-on-failure',
@@ -35,10 +41,7 @@ export default defineConfig({
       },
     },
   ],
-  webServer: {
-    command: 'npm start',
-    url: 'http://localhost:4200',
-    reuseExistingServer: true,
-    timeout: 120_000,
-  },
+  webServer: useDevServer
+    ? { command: 'npm start', url: 'http://localhost:4200', reuseExistingServer: true, timeout: 120_000 }
+    : undefined,
 });
