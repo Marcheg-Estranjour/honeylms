@@ -20,6 +20,7 @@ import { CatalogService } from '../catalog/catalog.service';
 import { LessonDetail, ResourceDetail } from '../learning/learning.models';
 import { LearningService } from '../learning/learning.service';
 import { CourseEditorService } from './course-editor.service';
+import { managementHome } from './management-home';
 
 /**
  * « Modifier la leçon » (Trainer) — US-LESSON-02 (edit), US-LESSON-03 (publish),
@@ -44,6 +45,9 @@ export class LessonEditorPage {
   private readonly editor = inject(CourseEditorService);
   private readonly downloads = inject(FileDownloadService);
   private readonly fb = inject(NonNullableFormBuilder);
+
+  /** Breadcrumb root: « Mes formations » (Trainer) or « Formations » (Admin). */
+  protected readonly home = managementHome();
 
   protected readonly accept = ACCEPT_ATTRIBUTE;
   protected readonly formats = ALLOWED_FORMATS_LABEL;

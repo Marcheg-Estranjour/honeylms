@@ -6,13 +6,6 @@ import { Shell } from './core/layout/shell';
 
 const TITLE_SUFFIX = ' · Honey Group Academy';
 
-/** Placeholder page for a screen planned in a later sprint (see ComingSoonPage). */
-const comingSoon = (heading: string, sprint: string) => ({
-  loadComponent: () => import('./shared/coming-soon-page').then((m) => m.ComingSoonPage),
-  data: { heading, sprint },
-  title: heading + TITLE_SUFFIX,
-});
-
 export const routes: Routes = [
   // ---- Public pages (no header) ----
   {
@@ -100,13 +93,13 @@ export const routes: Routes = [
       },
       {
         path: 'trainer/courses/:courseId',
-        canActivate: [roleGuard('TRAINER')],
+        canActivate: [roleGuard('TRAINER', 'ADMIN')],
         loadComponent: () => import('./features/trainer/course-editor-page').then((m) => m.CourseEditorPage),
         title: 'Gérer la formation' + TITLE_SUFFIX,
       },
       {
         path: 'trainer/courses/:courseId/lessons/:lessonId',
-        canActivate: [roleGuard('TRAINER')],
+        canActivate: [roleGuard('TRAINER', 'ADMIN')],
         loadComponent: () => import('./features/trainer/lesson-editor-page').then((m) => m.LessonEditorPage),
         title: 'Modifier la leçon' + TITLE_SUFFIX,
       },
@@ -118,7 +111,12 @@ export const routes: Routes = [
         loadComponent: () => import('./features/admin/admin-users-page').then((m) => m.AdminUsersPage),
         title: 'Utilisateurs' + TITLE_SUFFIX,
       },
-      { path: 'admin/courses', canActivate: [roleGuard('ADMIN')], ...comingSoon('Formations', 'S10') },
+      {
+        path: 'admin/courses',
+        canActivate: [roleGuard('ADMIN')],
+        loadComponent: () => import('./features/admin/admin-courses-page').then((m) => m.AdminCoursesPage),
+        title: 'Formations' + TITLE_SUFFIX,
+      },
     ],
   },
 

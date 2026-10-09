@@ -1,4 +1,4 @@
-import { HttpErrorResponse } from '@angular/common/http';
+import { HttpErrorResponse, provideHttpClient } from '@angular/common/http';
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
@@ -66,6 +66,7 @@ describe('CourseEditorPage', () => {
   async function open() {
     TestBed.configureTestingModule({
       providers: [
+        provideHttpClient(),
         provideRouter([{ path: 'trainer/courses/:courseId', component: CourseEditorPage }]),
         { provide: CourseOutlineService, useValue: { load } },
         { provide: CourseEditorService, useValue: editor },

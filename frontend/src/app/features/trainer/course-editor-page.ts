@@ -14,6 +14,7 @@ import { CourseCategory, CourseDetail } from '../../shared/courses/course.models
 import { CourseOutline, CourseOutlineService, OutlineModule } from '../learning/course-outline.service';
 import { LessonDetail, ModuleDetail } from '../learning/learning.models';
 import { CourseEditorService } from './course-editor.service';
+import { managementHome } from './management-home';
 
 /**
  * « Gérer la formation » (Trainer) — US-COURSE-04/05/06 (edit, publish, unpublish the course),
@@ -39,6 +40,9 @@ export class CourseEditorPage {
   private readonly outlines = inject(CourseOutlineService);
   private readonly editor = inject(CourseEditorService);
   private readonly fb = inject(NonNullableFormBuilder);
+
+  /** Breadcrumb root: « Mes formations » (Trainer) or « Formations » (Admin). */
+  protected readonly home = managementHome();
 
   protected readonly categories = CATEGORIES;
   protected readonly state = signal<'loading' | 'ready' | 'error'>('loading');
