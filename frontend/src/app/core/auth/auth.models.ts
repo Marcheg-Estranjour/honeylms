@@ -13,6 +13,9 @@ export interface UserSummary {
   firstName: string;
   lastName: string;
   role: Role;
+  /** Gap G9 — present in every UserSummary since S10 (optional here: older sessions lack it). */
+  active?: boolean;
+  createdAt?: string | null;
 }
 
 /** Payload of POST /api/auth/login. */

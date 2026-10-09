@@ -2,8 +2,10 @@ package com.honeygroup.honeylms.user;
 
 import com.honeygroup.honeylms.user.dto.CreateTrainerRequest;
 import com.honeygroup.honeylms.user.dto.UserSummary;
+import com.honeygroup.honeylms.common.ForbiddenActionException;
 import java.util.List;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -52,10 +54,10 @@ public class UserAccountService {
         return toSummary(userAccountRepository.save(account));
     }
 
-    /** US-ADMIN-01 — Manage users. ADMIN only (see SecurityConfig). */
+    /** US-ADMIN-01 — Manage users. ADMIN only (see SecurityConfig). Sorted by name. */
     @Transactional(readOnly = true)
     public List<UserSummary> listUsers() {
-        return userAccountRepository.findAll().stream()
+        return userAccountRepository.findAll(Sort.by("lastName", "firstName")).stream()
                 .map(this::toSummary)
                 .toList();
     }
@@ -68,25 +70,24 @@ public class UserAccountService {
 
     /**
      * US-AUTH-03 — Account status.
-     * Authorization (ADMIN only) is enforced at the security layer (SecurityConfig),
-     * not here - this service only implements the business action itself.
+     * Authorization (ADMIN only) is enforced at the security layer (SecurityConfig).
+     * CHOIX TECHNIQUE : an Admin cannot deactivate his own account (he would lock himself
+     * out, possibly leaving the platform without any active Admin).
      */
     @Transactional
-    public UserSummary updateStatus(Long userId, boolean active) {
+    public UserSummary updateStatus(Long userId, boolean active, String requesterEmail) {
         UserAccount account = userAccountRepository.findById(userId)
                 .orElseThrow(() -> new UserNotFoundException(userId));
+
+        if (!active && account.getEmail().equalsIgnoreCase(requesterEmail)) {
+            throw new ForbiddenActionException("You cannot deactivate your own account");
+        }
 
         account.setActive(active);
         return toSummary(userAccountRepository.save(account));
     }
 
     private UserSummary toSummary(UserAccount account) {
-        return new UserSummary(
-                account.getId(),
-                account.getEmail(),
-                account.getFirstName(),
-                account.getLastName(),
-                account.getRole().getCode()
-        );
+        return UserSummary.from(account);
     }
 }

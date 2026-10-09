@@ -74,8 +74,7 @@ public class CourseTrainerService {
 
         return courseTrainerRepository.findByCourse_Id(courseId).stream()
                 .map(ct -> ct.getTrainer())
-                .map(t -> new UserSummary(t.getId(), t.getEmail(), t.getFirstName(), t.getLastName(),
-                        t.getRole().getCode()))
+                .map(UserSummary::from)
                 .toList();
     }
 

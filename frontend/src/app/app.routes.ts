@@ -112,7 +112,12 @@ export const routes: Routes = [
       },
 
       // Admin
-      { path: 'admin/users', canActivate: [roleGuard('ADMIN')], ...comingSoon('Utilisateurs', 'S10') },
+      {
+        path: 'admin/users',
+        canActivate: [roleGuard('ADMIN')],
+        loadComponent: () => import('./features/admin/admin-users-page').then((m) => m.AdminUsersPage),
+        title: 'Utilisateurs' + TITLE_SUFFIX,
+      },
       { path: 'admin/courses', canActivate: [roleGuard('ADMIN')], ...comingSoon('Formations', 'S10') },
     ],
   },

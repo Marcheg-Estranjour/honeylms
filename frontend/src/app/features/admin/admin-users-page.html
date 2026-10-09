@@ -1,0 +1,139 @@
+<div class="head">
+  <h1>Utilisateurs</h1>
+  @if (!creating()) {
+    <button mat-flat-button type="button" (click)="openCreate()">Créer un compte formateur</button>
+  }
+</div>
+
+@if (creating()) {
+  <section class="card" aria-labelledby="create-title">
+    <h2 id="create-title">Nouveau compte formateur</h2>
+    <form class="create" [formGroup]="trainerForm" (ngSubmit)="createTrainer()">
+      <mat-form-field>
+        <mat-label>Prénom</mat-label>
+        <input matInput formControlName="firstName" autocomplete="off" />
+        @if (trainerForm.controls.firstName.hasError('required')) {
+          <mat-error>Le prénom est obligatoire.</mat-error>
+        }
+      </mat-form-field>
+      <mat-form-field>
+        <mat-label>Nom</mat-label>
+        <input matInput formControlName="lastName" autocomplete="off" />
+        @if (trainerForm.controls.lastName.hasError('required')) {
+          <mat-error>Le nom est obligatoire.</mat-error>
+        }
+      </mat-form-field>
+      <mat-form-field>
+        <mat-label>Adresse email</mat-label>
+        <input matInput type="email" formControlName="email" autocomplete="off" />
+        @if (trainerForm.controls.email.hasError('required')) {
+          <mat-error>L'adresse email est obligatoire.</mat-error>
+        } @else if (trainerForm.controls.email.hasError('email')) {
+          <mat-error>Cette adresse email n'est pas valide.</mat-error>
+        }
+      </mat-form-field>
+      <mat-form-field>
+        <mat-label>Mot de passe initial</mat-label>
+        <input matInput type="text" formControlName="password" autocomplete="off" />
+        <mat-hint>{{ minLength }} caractères minimum, à communiquer au formateur.</mat-hint>
+        @if (trainerForm.controls.password.hasError('required')) {
+          <mat-error>Le mot de passe est obligatoire.</mat-error>
+        } @else if (trainerForm.controls.password.hasError('minlength')) {
+          <mat-error>{{ minLength }} caractères minimum.</mat-error>
+        }
+      </mat-form-field>
+      @if (createError(); as message) {
+        <p class="alert error wide" role="alert">{{ message }}</p>
+      }
+      <div class="buttons wide">
+        <button mat-flat-button type="submit" [disabled]="saving()">
+          {{ saving() ? 'Création…' : 'Créer le compte' }}
+        </button>
+        <button mat-button type="button" [disabled]="saving()" (click)="cancelCreate()">Annuler</button>
+      </div>
+    </form>
+  </section>
+}
+
+@if (notice(); as message) {
+  <p class="alert ok" role="status">{{ message }}</p>
+}
+@if (error(); as message) {
+  <p class="alert error" role="alert">{{ message }}</p>
+}
+
+@switch (state()) {
+  @case ('loading') {
+    <p class="muted" role="status">Chargement des utilisateurs…</p>
+  }
+  @case ('error') {
+    <div class="muted" role="alert">
+      <p>Les utilisateurs n'ont pas pu être chargés.</p>
+      <button mat-stroked-button type="button" (click)="load()">Réessayer</button>
+    </div>
+  }
+  @case ('ready') {
+    <div class="filters">
+      <div class="chips" role="group" aria-label="Filtrer par rôle">
+        @for (f of filters; track f.value) {
+          <button type="button" [class.active]="roleFilter() === f.value" [attr.aria-pressed]="roleFilter() === f.value" (click)="roleFilter.set(f.value)">
+            {{ f.label }} ({{ counts()[f.value] }})
+          </button>
+        }
+      </div>
+      <input class="search" type="search" placeholder="Rechercher un nom ou un email" aria-label="Rechercher un utilisateur" (input)="onSearch($event)" />
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th scope="col">Nom</th>
+            <th scope="col">Email</th>
+            <th scope="col">Rôle</th>
+            <th scope="col">Statut</th>
+            <th scope="col">Créé le</th>
+            <th scope="col"><span class="sr-only">Actions</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (u of visible(); track u.id) {
+            <tr [class.inactive]="!u.active">
+              <td>
+                <strong>{{ u.firstName }} {{ u.lastName }}</strong>
+                @if (u.id === currentUserId()) {
+                  <span class="you">(vous)</span>
+                }
+              </td>
+              <td class="email">{{ u.email }}</td>
+              <td><span class="hg-tag">{{ roleLabels[u.role] }}</span></td>
+              <td>
+                @if (u.active) {
+                  <span class="hg-tag success">Actif</span>
+                } @else {
+                  <span class="hg-tag danger">Désactivé</span>
+                }
+              </td>
+              <td>{{ u.createdAt ? (u.createdAt | date: 'd MMM y') : '—' }}</td>
+              <td class="action">
+                <button
+                  mat-stroked-button
+                  type="button"
+                  [disabled]="busyId() !== null || (u.active && u.id === currentUserId())"
+                  [attr.aria-label]="(u.active ? 'Désactiver ' : 'Réactiver ') + u.firstName + ' ' + u.lastName"
+                  (click)="toggleActive(u)"
+                >
+                  {{ busyId() === u.id ? '…' : u.active ? 'Désactiver' : 'Réactiver' }}
+                </button>
+              </td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="6" class="muted">Aucun utilisateur ne correspond à ces critères.</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+}
