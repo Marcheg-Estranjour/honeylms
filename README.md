@@ -1,19 +1,54 @@
-# HoneyLMS — Backend
+# HoneyLMS — Honey Group Academy
 
-Squelette technique du backend HoneyLMS (Honey Group Academy) — Sprint 1.
+Plateforme de formation (LMS) développée pour **Honey Group** dans le cadre du stage CDA
+(fin : 23 octobre 2026). Trois rôles :
 
-Ce document décrit les **démarches** à suivre pour installer, lancer et vérifier le projet, ainsi que les décisions techniques prises à cette étape.
+- **Étudiant** : catalogue, inscription, leçons et ressources, progression, dépôt de devoirs, correction.
+- **Formateur** : ses formations, éditeur (modules, leçons, ressources, publication), corrections notées /20.
+- **Administrateur** : comptes (activation, création de formateurs), formations et attribution des formateurs.
+
+| Couche | Technologies |
+|---|---|
+| Front | Angular 22 (standalone, signals), Angular Material 22, Vitest, Playwright |
+| Back | Spring Boot 4.0 / Java 21, Spring Security 7 (JWT stateless), JPA, Flyway |
+| Données | PostgreSQL 16 ; fichiers sur volume (`/data/uploads`) |
+| Exécution | Docker Compose : `postgres` + `backend` + `frontend` (nginx non-root) |
+| Qualité | GitHub Actions (CI backend + frontend obligatoire sur `main`), Conventional Commits, PR |
+
+La conception (MCD/MLD, user stories, règles métier, API, risques) est décrite dans le
+**Dossier de Conception**.
 
 ---
 
-## 1. Prérequis
+## 1. Démarrage rapide
 
-| Outil | Version | Vérification |
-|---|---|---|
-| JDK | 21 | `java -version` |
-| Maven | 3.9+ (ou utiliser le wrapper `./mvnw` si ajouté plus tard) | `mvn -version` |
-| Docker & Docker Compose | récents | `docker --version` / `docker compose version` |
-| Git | récent | `git --version` |
+Prérequis : Docker + Docker Compose, Git. (Pour développer : JDK 21, Node 24 — voir `.nvmrc`.)
+
+```bash
+git clone git@github.com:Marcheg-Estranjour/honeylms.git
+cd honeylms
+docker compose up -d --build        # ≈ 2 min au premier lancement
+```
+
+| Service | Adresse |
+|---|---|
+| Application (front nginx, `/api` relayé) | http://localhost:8000 |
+| API backend (accès direct) | http://localhost:8080/api |
+| PostgreSQL | `localhost:5432` (base/utilisateur/mot de passe : `honeylms`) |
+
+Le profil Spring `dev` (par défaut en local) charge le **jeu de démo** (`db/seed/R__demo_seed.sql`).
+Comptes, tous avec le mot de passe `Honey2026!` :
+
+| Rôle | Email |
+|---|---|
+| Administratrice | `admin@honeylms.test` |
+| Formateur / formatrice | `formateur@honeylms.test` · `formatrice@honeylms.test` |
+| Étudiant(e)s | `etudiant@honeylms.test` · `etudiant2@honeylms.test` |
+
+Ressource PDF et dépôt de devoir de démonstration (ils passent par l'API, le SQL ne peut pas
+créer de fichiers) : `./scripts/demo-prepare.sh` (curl, jq, python3).
+
+Arrêter : `docker compose down` · tout réinitialiser (**efface les données**) : `docker compose down -v`.
 
 ---
 
@@ -21,125 +56,67 @@ Ce document décrit les **démarches** à suivre pour installer, lancer et véri
 
 ```
 honeylms/
-├── .github/workflows/backend-ci.yml   # Pipeline CI (build + tests à chaque push/PR)
-├── docker-compose.yml                 # Orchestration locale : PostgreSQL + backend
-├── .gitignore
-├── README.md                          # Ce document
-└── backend/
-    ├── pom.xml
-    ├── Dockerfile
-    ├── .dockerignore
-    └── src/
-        ├── main/java/com/honeygroup/honeylms/
-        │   ├── HoneylmsApplication.java
-        │   └── user/
-        │       ├── Role.java
-        │       ├── RoleCode.java
-        │       ├── RoleRepository.java
-        │       ├── UserAccount.java
-        │       └── UserAccountRepository.java
-        └── main/resources/
-            ├── application.yml
-            └── db/migration/
-                ├── V1__create_role.sql
-                └── V2__create_user_account.sql
+├── .github/workflows/      # backend-ci.yml, frontend-ci.yml (checks obligatoires sur main)
+├── docker-compose.yml      # postgres + backend + frontend
+├── backend/                # Spring Boot — modules : user, course, enrollment, progress,
+│                           #   submission, file, trainingclass, teaching, security, common
+├── frontend/               # Angular — core/, shared/, features/{auth,catalog,learning,trainer,admin}
+│   ├── e2e/                # tests Playwright (parcours étudiant, formateur, admin)
+│   └── nginx/              # configuration de l'image de production
+├── scripts/                # demo-prepare.sh, make-pdf.py
+└── docs/DEMO.md            # scénario de démonstration minuté
 ```
 
-Le dossier `frontend/` (Angular) sera ajouté au Sprint 2.
+Détails du front (installation, conventions, charte, E2E, image nginx) : [`frontend/README.md`](frontend/README.md).
 
 ---
 
-## 3. Démarches — première mise en route
+## 3. Développement au quotidien
 
-### Étape 1 — Cloner et se positionner à la racine
 ```bash
-git clone <url-du-repo>
-cd honeylms
-```
-
-### Étape 2 — Lancer l'environnement complet avec Docker Compose
-```bash
-docker compose up --build
-```
-Cette commande :
-1. démarre un conteneur PostgreSQL (`honeylms-postgres`) ;
-2. build l'image du backend (multi-stage : Maven → JRE Alpine) ;
-3. démarre le backend, qui applique automatiquement les migrations Flyway (V1, V2) au démarrage.
-
-### Étape 3 — Vérifier que tout fonctionne
-```bash
-curl http://localhost:8080/actuator/health
-```
-Réponse attendue :
-```json
-{"status":"UP"}
+docker compose up -d postgres backend    # base + API (rebuild du backend : ajouter --build backend)
+cd frontend && npm start                 # http://localhost:4200, rechargement à chaud, /api → :8080
 ```
 
-### Étape 4 — Vérifier les migrations en base (optionnel)
-```bash
-docker exec -it honeylms-postgres psql -U honeylms -d honeylms -c "\dt"
-docker exec -it honeylms-postgres psql -U honeylms -d honeylms -c "SELECT * FROM role;"
-```
-Vous devez voir les tables `role`, `user_account`, `flyway_schema_history`, et 3 lignes dans `role` (STUDENT, TRAINER, ADMIN).
+Backend hors Docker (depuis l'IDE ou Maven) : `docker compose up -d postgres` puis
+`cd backend && ./mvnw spring-boot:run -Dspring-boot.run.profiles=dev`.
 
-### Étape 5 — Arrêter l'environnement
-```bash
-docker compose down          # arrête les conteneurs, garde les données
-docker compose down -v       # arrête et supprime aussi le volume PostgreSQL (repart de zéro)
-```
+Workflow Git : une branche par incrément (`feature/…`, `fix/…`, `test/…`, `docs/…`), commits
+*Conventional Commits*, PR vers `main`, merge uniquement si les deux CI sont vertes.
 
 ---
 
-## 4. Démarches — développement au quotidien (sans tout redémarrer dans Docker)
+## 4. Tests
 
-Pendant le développement, il est plus rapide de ne lancer que PostgreSQL dans Docker et de faire tourner le backend directement depuis l'IDE ou Maven.
-
-```bash
-# 1. Ne démarrer que PostgreSQL
-docker compose up postgres -d
-
-# 2. Lancer le backend en local
-cd backend
-mvn spring-boot:run
-```
-Le backend se connecte alors à `jdbc:postgresql://localhost:5432/honeylms` (valeur par défaut dans `application.yml`).
+| Commande | Portée |
+|---|---|
+| `cd backend && ./mvnw test` | Tests unitaires backend (JUnit 5, Mockito) — exécutés par la CI |
+| `cd frontend && npx ng test --watch=false` | Tests unitaires front (Vitest, jsdom) — exécutés par la CI |
+| `cd frontend && npm run e2e:docker` | Tests de bout en bout Playwright sur la stack locale (voir le README front) |
 
 ---
 
-## 5. Démarches — tests
+## 5. Base de données et migrations
 
-```bash
-cd backend
-mvn clean verify
-```
-Le pipeline CI (`.github/workflows/backend-ci.yml`) exécute exactement cette commande à chaque push et pull request sur `main`, avec une base PostgreSQL de test éphémère.
-
----
-
-## 6. Démarches — ajouter une nouvelle migration
-
-1. Créer un nouveau fichier dans `backend/src/main/resources/db/migration/`, nommé `V<numéro>__<description>.sql` (ex. `V3__create_course.sql`).
-2. **Ne jamais modifier une migration déjà exécutée** (déjà appliquée en local, en CI, ou en démo) — toute évolution passe par un nouveau numéro de version.
-3. Relancer l'application : Flyway applique automatiquement les migrations manquantes au démarrage.
+- Le schéma est piloté **uniquement par Flyway** (`backend/src/main/resources/db/migration`),
+  Hibernate est en `ddl-auto: validate`.
+- Nouvelle évolution = nouveau fichier `V<n>__<description>.sql`. **Ne jamais modifier une
+  migration déjà appliquée.**
+- Le jeu de démo est une migration *répétable* (`db/seed/R__demo_seed.sql`), chargée seulement
+  avec le profil `dev`.
+- Toutes les dates sont des `Instant` (UTC) côté Java, affichées en heure de Paris par le front.
 
 ---
 
-## 7. Décisions techniques prises à cette étape
+## 6. Principales décisions techniques
 
-| Décision | Choix retenu | Justification |
-|---|---|---|
-| Version Spring Boot | **4.0.7** | Spring Boot 3.5 a atteint sa fin de support open-source le 30/06/2026 ; 4.0 est la version recommandée pour tout nouveau projet démarré après cette date. Java 21 LTS est utilisé (minimum requis par Boot 4 : Java 17). |
-| Driver Flyway PostgreSQL | `spring-boot-starter-flyway` + `flyway-database-postgresql` | Depuis Flyway 10, le support PostgreSQL est un module séparé ; Spring Boot 4 fournit un starter dédié qui gère la version automatiquement. |
-| Stratégie Hibernate | `ddl-auto: validate` | Le schéma est piloté **uniquement** par Flyway (cohérent avec la stratégie de migration définie dans le Dossier de Conception). Hibernate ne doit jamais créer/modifier de tables lui-même. |
-| Image Docker backend | Build multi-stage (Maven → JRE Alpine), utilisateur non-root | Image finale légère, et bonne pratique de sécurité (pas d'exécution en root dans le conteneur). |
-| CI | GitHub Actions, déclenché uniquement sur les changements dans `backend/` | Évite de relancer le pipeline backend pour des changements qui ne le concernent pas (ex. futurs changements `frontend/`). |
-
-**Point de vigilance** (à garder en tête pour le prochain incrément, l'authentification) : Spring Boot 4.0 introduit une réécriture du DSL de Spring Security. La configuration de sécurité/JWT sera vérifiée contre la documentation Spring Security 7 au moment de son implémentation plutôt que d'être écrite de mémoire, pour éviter une config qui compile mais ne se comporte pas comme prévu.
-
----
-
-## 8. Prochaine incrément (Sprint 1, suite)
-
-- `RoleCode` + données V1 sont prêts → implémenter `US-AUTH-01/02/03` (registration, login, JWT, activation de compte).
-- Ajouter Spring Security + configuration JWT.
-- Créer les DTO d'authentification (`RegisterRequest`, `LoginRequest`, `AuthResponse`).
+| Décision | Justification |
+|---|---|
+| Monolithe modulaire (un module par domaine) | Simplicité de déploiement pour un MVP, frontières claires entre domaines. |
+| JWT stateless en `sessionStorage`, pas de refresh token | Simple et suffisant pour le MVP ; limite connue : un compte désactivé garde l'accès jusqu'à l'expiration du jeton (24 h). |
+| Contrôles d'accès côté serveur (rôle + périmètre formateur) | Les guards Angular ne servent qu'au confort de navigation. |
+| Front et API sur la même origine (proxy de dev / nginx) | Pas de CORS à configurer, CSP simple (`connect-src 'self'`). |
+| Contenu des leçons en texte brut | Aucun HTML interprété : pas de risque XSS. |
+| Téléchargements via `HttpClient` + objet blob | Le JWT n'apparaît jamais dans une URL. |
+| Images Docker multi-étapes, utilisateurs non-root | Images légères, surface d'attaque réduite. |
+| Polices auto-hébergées (`@fontsource`) | Aucune requête vers un tiers (RGPD). |
