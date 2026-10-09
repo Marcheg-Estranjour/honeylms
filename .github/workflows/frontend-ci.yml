@@ -6,14 +6,14 @@ on:
     paths:
       - "frontend/**"
       - ".github/workflows/frontend-ci.yml"
+  # No path filter on pull requests: this check is REQUIRED on main, and a required check
+  # that is skipped by a path filter would stay « pending » forever on the other side's PRs.
   pull_request:
     branches: [main]
-    paths:
-      - "frontend/**"
-      - ".github/workflows/frontend-ci.yml"
 
 jobs:
-  build-and-test:
+  frontend:
+    name: Frontend build and tests
     runs-on: ubuntu-latest
 
     defaults:

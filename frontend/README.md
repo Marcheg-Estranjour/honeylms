@@ -148,18 +148,29 @@ ng generate @angular/material:theme-color
 # autres   : valeurs par défaut ; dossier de sortie : src/
 ```
 
-Remplacer le contenu de `src/styles.scss` :
+Déclarer les polices auto-hébergées dans `angular.json` (`projects.frontend.architect.build.options.styles`), **avant** `src/styles.scss` :
+
+```json
+"styles": [
+  "@fontsource/nunito-sans/400.css",
+  "@fontsource/nunito-sans/600.css",
+  "@fontsource/nunito-sans/700.css",
+  "@fontsource/nunito-sans/800.css",
+  "@fontsource/young-serif/400.css",
+  "src/styles.scss"
+]
+```
+
+> ⚠️ Ne pas les importer dans `styles.scss` avec `@use '@fontsource/...css'` : Sass ne sait pas
+> résoudre ces fichiers CSS de `node_modules` (erreur de build). Corrigé en S8, incrément 2.
+> Supprimer aussi les balises `<link>` Google Fonts ajoutées par `ng add` dans `src/index.html`.
+
+Remplacer le contenu de `src/styles.scss` (version initiale ; la version à jour, avec les classes
+de domaine `.cat-*` et les variantes de `.hg-tag`, est dans le dépôt) :
 
 ```scss
 @use '@angular/material' as mat;
 @use './theme-colors' as brand;
-
-// Self-hosted fonts (RGPD: no request to Google Fonts)
-@use '@fontsource/nunito-sans/400.css';
-@use '@fontsource/nunito-sans/600.css';
-@use '@fontsource/nunito-sans/700.css';
-@use '@fontsource/nunito-sans/800.css';
-@use '@fontsource/young-serif/400.css';
 
 html {
   color-scheme: light;
