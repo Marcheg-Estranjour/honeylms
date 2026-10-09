@@ -295,6 +295,17 @@ Chaque exécution crée sa propre étudiante (`e2e.<horodatage>@honeylms.test`),
 fin : les tests sont rejouables sur la même base. Pour repartir d'une base propre :
 `docker compose down -v && docker compose up -d`.
 
+### Image de production (nginx)
+
+`docker compose up -d --build` lance aussi le service `frontend` : build Angular de production
+servi par **nginx non-root**, qui relaie `/api` vers le backend (même origine, pas de CORS) et
+ajoute les en-têtes de sécurité (CSP, `nosniff`, `X-Frame-Options`, `Referrer-Policy`).
+
+- Démo « comme en production » : **http://localhost:8000** (port modifiable : `FRONTEND_PORT=…`).
+- Développement : toujours `npm start` sur http://localhost:4200.
+- Tests E2E contre l'image : `E2E_BASE_URL=http://localhost:8000 npm run e2e:docker`.
+- Configuration : `Dockerfile`, `nginx/default.conf`, `nginx/security-headers.conf`.
+
 ---
 
 ## 5. Charte graphique (issue des mock-ups)
