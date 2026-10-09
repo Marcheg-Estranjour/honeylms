@@ -9,6 +9,8 @@ import static org.mockito.Mockito.when;
 
 import com.honeygroup.honeylms.user.dto.CreateTrainerRequest;
 import com.honeygroup.honeylms.user.dto.UserSummary;
+import com.honeygroup.honeylms.common.ForbiddenActionException;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
@@ -16,6 +18,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Sort;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 @ExtendWith(MockitoExtension.class)
@@ -80,7 +83,7 @@ class UserAccountServiceTest {
 
     @Test
     void listUsers_returnsAllAccountsAsSummaries() {
-        when(userAccountRepository.findAll()).thenReturn(List.of(account()));
+        when(userAccountRepository.findAll(any(Sort.class))).thenReturn(List.of(account()));
 
         List<UserSummary> result = userAccountService.listUsers();
 
@@ -112,7 +115,7 @@ class UserAccountServiceTest {
         when(userAccountRepository.findById(1L)).thenReturn(Optional.of(account));
         when(userAccountRepository.save(any(UserAccount.class))).thenAnswer(inv -> inv.getArgument(0));
 
-        UserSummary result = userAccountService.updateStatus(1L, false);
+        UserSummary result = userAccountService.updateStatus(1L, false, "admin@example.com");
 
         assertThat(result.id()).isEqualTo(1L);
         assertThat(account.isActive()).isFalse();
@@ -122,7 +125,44 @@ class UserAccountServiceTest {
     void updateStatus_throwsUserNotFound_whenIdUnknown() {
         when(userAccountRepository.findById(99L)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> userAccountService.updateStatus(99L, false))
+        assertThatThrownBy(() -> userAccountService.updateStatus(99L, false, "admin@example.com"))
                 .isInstanceOf(UserNotFoundException.class);
+    }
+
+    @Test
+    void updateStatus_refusesToDeactivateOwnAccount() {
+        UserAccount admin = account();
+        admin.setEmail("admin@example.com");
+        when(userAccountRepository.findById(1L)).thenReturn(Optional.of(admin));
+
+        assertThatThrownBy(() -> userAccountService.updateStatus(1L, false, "Admin@Example.com"))
+                .isInstanceOf(ForbiddenActionException.class);
+        assertThat(admin.isActive()).isTrue();
+        verify(userAccountRepository, never()).save(any());
+    }
+
+    @Test
+    void updateStatus_reactivatesAccount() {
+        UserAccount account = account();
+        account.setActive(false);
+        when(userAccountRepository.findById(1L)).thenReturn(Optional.of(account));
+        when(userAccountRepository.save(any(UserAccount.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        UserSummary result = userAccountService.updateStatus(1L, true, "admin@example.com");
+
+        assertThat(result.active()).isTrue();
+    }
+
+    @Test
+    void summary_exposesActiveAndCreatedAt() {
+        UserAccount account = account();
+        Instant created = Instant.parse("2026-09-01T08:00:00Z");
+        account.setCreatedAt(created);
+
+        UserSummary summary = UserSummary.from(account);
+
+        assertThat(summary.active()).isTrue();
+        assertThat(summary.createdAt()).isEqualTo(created);
+        assertThat(summary.role()).isEqualTo("STUDENT");
     }
 }

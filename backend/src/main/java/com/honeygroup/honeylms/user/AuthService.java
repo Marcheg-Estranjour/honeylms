@@ -108,12 +108,6 @@ public class AuthService {
     }
 
     private UserSummary toSummary(UserAccount account) {
-        return new UserSummary(
-                account.getId(),
-                account.getEmail(),
-                account.getFirstName(),
-                account.getLastName(),
-                account.getRole().getCode()
-        );
+        return UserSummary.from(account);
     }
 }
