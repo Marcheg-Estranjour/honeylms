@@ -16,6 +16,7 @@ WORKDIR /app
 RUN addgroup -S honeylms && adduser -S honeylms -G honeylms
 COPY --from=build /app/target/honeylms-backend-*.jar app.jar
 RUN chown honeylms:honeylms app.jar
+RUN mkdir -p /data/uploads && chown honeylms:honeylms /data/uploads
 USER honeylms
 
 EXPOSE 8080
