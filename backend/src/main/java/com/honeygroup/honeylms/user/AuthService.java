@@ -1,11 +1,14 @@
 package com.honeygroup.honeylms.user;
 
+import com.honeygroup.honeylms.audit.AuditAction;
+import com.honeygroup.honeylms.audit.AuditService;
 import com.honeygroup.honeylms.security.JwtService;
 import com.honeygroup.honeylms.user.dto.AuthResponse;
 import com.honeygroup.honeylms.user.dto.LoginRequest;
 import com.honeygroup.honeylms.user.dto.RegisterRequest;
 import com.honeygroup.honeylms.user.dto.RegisterResponse;
 import com.honeygroup.honeylms.user.dto.UserSummary;
+import java.util.Map;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -17,15 +20,18 @@ public class AuthService {
     private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
+    private final AuditService auditService;
 
     public AuthService(UserAccountRepository userAccountRepository,
                         RoleRepository roleRepository,
                         PasswordEncoder passwordEncoder,
-                        JwtService jwtService) {
+                        JwtService jwtService,
+                        AuditService auditService) {
         this.userAccountRepository = userAccountRepository;
         this.roleRepository = roleRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
+        this.auditService = auditService;
     }
 
     /**
@@ -76,18 +82,24 @@ public class AuthService {
     public AuthResponse login(LoginRequest request) {
         String normalizedEmail = request.email().trim().toLowerCase();
 
-        UserAccount account = userAccountRepository.findByEmail(normalizedEmail)
-                .orElseThrow(InvalidCredentialsException::new);
+        UserAccount account = userAccountRepository.findByEmail(normalizedEmail).orElse(null);
+        if (account == null) {
+            auditService.recordLogin(AuditAction.LOGIN_FAILURE, normalizedEmail, null, Map.of("reason", "UNKNOWN_EMAIL"));
+            throw new InvalidCredentialsException();
+        }
 
         if (!passwordEncoder.matches(request.password(), account.getPasswordHash())) {
+            auditService.recordLogin(AuditAction.LOGIN_FAILURE, normalizedEmail, account.getId(), Map.of("reason", "BAD_PASSWORD"));
             throw new InvalidCredentialsException();
         }
 
         if (!account.isActive()) {
+            auditService.recordLogin(AuditAction.LOGIN_REJECTED_DISABLED, normalizedEmail, account.getId(), Map.of());
             throw new AccountDisabledException();
         }
 
         String token = jwtService.generateToken(account);
+        auditService.recordLogin(AuditAction.LOGIN_SUCCESS, normalizedEmail, account.getId(), Map.of());
 
         return new AuthResponse(
                 token,

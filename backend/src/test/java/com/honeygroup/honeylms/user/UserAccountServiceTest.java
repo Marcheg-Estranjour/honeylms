@@ -1,5 +1,6 @@
 package com.honeygroup.honeylms.user;
 
+import com.honeygroup.honeylms.audit.AuditService;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
@@ -32,6 +33,9 @@ class UserAccountServiceTest {
 
     @Mock
     private PasswordEncoder passwordEncoder;
+
+    @Mock
+    private AuditService auditService;
 
     @InjectMocks
     private UserAccountService userAccountService;

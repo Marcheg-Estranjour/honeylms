@@ -1,5 +1,6 @@
 package com.honeygroup.honeylms.submission;
 
+import com.honeygroup.honeylms.audit.AuditService;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
@@ -59,6 +60,9 @@ class SubmissionServiceTest {
 
     @Mock
     private LearningAccessService learningAccessService;
+
+    @Mock
+    private AuditService auditService;
 
     @InjectMocks
     private SubmissionService submissionService;

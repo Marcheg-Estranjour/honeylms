@@ -1,5 +1,8 @@
 package com.honeygroup.honeylms.user;
 
+import com.honeygroup.honeylms.audit.AuditAction;
+import com.honeygroup.honeylms.audit.AuditService;
+import java.util.Map;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
@@ -35,6 +38,9 @@ class AuthServiceTest {
 
     @Mock
     private JwtService jwtService;
+
+    @Mock
+    private AuditService auditService;
 
     @InjectMocks
     private AuthService authService;
@@ -156,5 +162,19 @@ class AuthServiceTest {
 
         assertThatThrownBy(() -> authService.login(request))
                 .isInstanceOf(AccountDisabledException.class);
+    }
+
+    @Test
+    void login_recordsAuditFailure_whenPasswordDoesNotMatch() {
+        LoginRequest request = new LoginRequest("alice@example.com", "wrong-password");
+        UserAccount account = activeAccount();
+
+        when(userAccountRepository.findByEmail("alice@example.com")).thenReturn(Optional.of(account));
+        when(passwordEncoder.matches("wrong-password", "hashed-password")).thenReturn(false);
+
+        assertThatThrownBy(() -> authService.login(request))
+                .isInstanceOf(InvalidCredentialsException.class);
+        verify(auditService).recordLogin(AuditAction.LOGIN_FAILURE, "alice@example.com",
+                account.getId(), Map.of("reason", "BAD_PASSWORD"));
     }
 }

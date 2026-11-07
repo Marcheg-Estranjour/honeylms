@@ -1,5 +1,7 @@
 package com.honeygroup.honeylms.course;
 
+import com.honeygroup.honeylms.audit.AuditAction;
+import com.honeygroup.honeylms.audit.AuditService;
 import com.honeygroup.honeylms.common.ForbiddenActionException;
 import com.honeygroup.honeylms.course.dto.CourseDetail;
 import com.honeygroup.honeylms.course.dto.CourseSummary;
@@ -7,6 +9,7 @@ import com.honeygroup.honeylms.course.dto.CreateCourseRequest;
 import com.honeygroup.honeylms.course.dto.UpdateCourseRequest;
 import com.honeygroup.honeylms.user.UserAccount;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -16,11 +19,14 @@ public class CourseService {
 
     private final CourseRepository courseRepository;
     private final CourseAuthorizationService courseAuthorizationService;
+    private final AuditService auditService;
 
     public CourseService(CourseRepository courseRepository,
-                          CourseAuthorizationService courseAuthorizationService) {
+                          CourseAuthorizationService courseAuthorizationService,
+                          AuditService auditService) {
         this.courseRepository = courseRepository;
         this.courseAuthorizationService = courseAuthorizationService;
+        this.auditService = auditService;
     }
 
     /**
@@ -78,7 +84,9 @@ public class CourseService {
                 .createdBy(requester)
                 .build();
 
-        return toDetail(courseRepository.save(course));
+        Course saved = courseRepository.save(course);
+        auditService.record(AuditAction.COURSE_CREATED, "COURSE", saved.getId(), Map.of("title", saved.getTitle()));
+        return toDetail(saved);
     }
 
     /**
