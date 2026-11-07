@@ -1,5 +1,7 @@
 package com.honeygroup.honeylms.submission;
 
+import com.honeygroup.honeylms.audit.AuditAction;
+import com.honeygroup.honeylms.audit.AuditService;
 import com.honeygroup.honeylms.common.ForbiddenActionException;
 import com.honeygroup.honeylms.course.Assignment;
 import com.honeygroup.honeylms.course.AssignmentNotFoundException;
@@ -16,6 +18,7 @@ import com.honeygroup.honeylms.submission.dto.SubmissionDetail;
 import com.honeygroup.honeylms.user.UserAccount;
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -29,19 +32,22 @@ public class SubmissionService {
     private final FileStorageService fileStorageService;
     private final CourseAuthorizationService courseAuthorizationService;
     private final LearningAccessService learningAccessService;
+    private final AuditService auditService;
 
     public SubmissionService(SubmissionRepository submissionRepository,
                               AssignmentRepository assignmentRepository,
                               StoredFileRepository storedFileRepository,
                               FileStorageService fileStorageService,
                               CourseAuthorizationService courseAuthorizationService,
-                              LearningAccessService learningAccessService) {
+                              LearningAccessService learningAccessService,
+                              AuditService auditService) {
         this.submissionRepository = submissionRepository;
         this.assignmentRepository = assignmentRepository;
         this.storedFileRepository = storedFileRepository;
         this.fileStorageService = fileStorageService;
         this.courseAuthorizationService = courseAuthorizationService;
         this.learningAccessService = learningAccessService;
+        this.auditService = auditService;
     }
 
     /**
@@ -191,7 +197,11 @@ public class SubmissionService {
         submission.setCorrectedAt(Instant.now());
         submission.setStatus(SubmissionStatus.CORRECTED);
 
-        return toDetail(submissionRepository.save(submission));
+        Submission saved = submissionRepository.save(submission);
+        auditService.record(AuditAction.SUBMISSION_CORRECTED, "SUBMISSION", submissionId, Map.of(
+                "studentId", String.valueOf(submission.getStudent().getId()),
+                "grade", request.grade() != null ? request.grade().toPlainString() : "none"));
+        return toDetail(saved);
     }
 
     // ---- helpers ----

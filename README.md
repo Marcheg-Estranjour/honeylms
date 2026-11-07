@@ -11,8 +11,8 @@ Plateforme de formation (LMS) développée pour **Honey Group** dans le cadre du
 |---|---|
 | Front | Angular 22 (standalone, signals), Angular Material 22, Vitest, Playwright |
 | Back | Spring Boot 4.0 / Java 21, Spring Security 7 (JWT stateless), JPA, Flyway |
-| Données | PostgreSQL 16 ; fichiers sur volume (`/data/uploads`) |
-| Exécution | Docker Compose : `postgres` + `backend` + `frontend` (nginx non-root) |
+| Données | PostgreSQL 16 ; fichiers sur volume (`/data/uploads`) ; journal d'audit MongoDB 8 (`audit_events`) |
+| Exécution | Docker Compose : `postgres` + `mongo` + `backend` + `frontend` (nginx non-root) |
 | Qualité | GitHub Actions (CI backend + frontend obligatoire sur `main`), Conventional Commits, PR |
 
 La conception (MCD/MLD, user stories, règles métier, API, risques) est décrite dans le
@@ -35,6 +35,7 @@ docker compose up -d --build        # ≈ 2 min au premier lancement
 | Application (front nginx, `/api` relayé) | http://localhost:8000 |
 | API backend (accès direct) | http://localhost:8080/api |
 | PostgreSQL | `localhost:5432` (base/utilisateur/mot de passe : `honeylms`) |
+| MongoDB (journal d'audit) | `localhost:27017`, base `honeylms_audit` (accessible depuis la machine seulement, ex. MongoDB Compass) |
 
 Le profil Spring `dev` (par défaut en local) charge le **jeu de démo** (`db/seed/R__demo_seed.sql`).
 Comptes, tous avec le mot de passe `Honey2026!` :

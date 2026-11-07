@@ -1,11 +1,14 @@
 package com.honeygroup.honeylms.course;
 
+import com.honeygroup.honeylms.audit.AuditAction;
+import com.honeygroup.honeylms.audit.AuditService;
 import com.honeygroup.honeylms.user.RoleCode;
 import com.honeygroup.honeylms.user.UserAccount;
 import com.honeygroup.honeylms.user.UserAccountRepository;
 import com.honeygroup.honeylms.user.UserNotFoundException;
 import com.honeygroup.honeylms.user.dto.UserSummary;
 import java.util.List;
+import java.util.Map;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -21,15 +24,18 @@ public class CourseTrainerService {
     private final CourseRepository courseRepository;
     private final UserAccountRepository userAccountRepository;
     private final CourseAuthorizationService courseAuthorizationService;
+    private final AuditService auditService;
 
     public CourseTrainerService(CourseTrainerRepository courseTrainerRepository,
                                  CourseRepository courseRepository,
                                  UserAccountRepository userAccountRepository,
-                                 CourseAuthorizationService courseAuthorizationService) {
+                                 CourseAuthorizationService courseAuthorizationService,
+                                 AuditService auditService) {
         this.courseTrainerRepository = courseTrainerRepository;
         this.courseRepository = courseRepository;
         this.userAccountRepository = userAccountRepository;
         this.courseAuthorizationService = courseAuthorizationService;
+        this.auditService = auditService;
     }
 
     /** US-ADMIN-07 — Assign a Trainer to a Course. */
@@ -48,6 +54,7 @@ public class CourseTrainerService {
         }
 
         courseTrainerRepository.save(CourseTrainer.of(course, trainer));
+        auditService.record(AuditAction.TRAINER_ASSIGNED, "COURSE", courseId, Map.of("trainerId", String.valueOf(trainerId)));
     }
 
     /**
@@ -65,6 +72,7 @@ public class CourseTrainerService {
                 .findById(new CourseTrainerId(courseId, trainerId))
                 .orElseThrow(() -> new TrainerAssignmentNotFoundException(courseId, trainerId));
         courseTrainerRepository.delete(assignment);
+        auditService.record(AuditAction.TRAINER_UNASSIGNED, "COURSE", courseId, Map.of("trainerId", String.valueOf(trainerId)));
     }
 
     @Transactional(readOnly = true)

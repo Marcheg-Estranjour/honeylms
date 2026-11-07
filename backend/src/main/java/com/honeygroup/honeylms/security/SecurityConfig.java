@@ -100,6 +100,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/users", "/api/users/*").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.POST, "/api/users/trainers").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.PATCH, "/api/users/*/status").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/api/admin/audit").hasRole("ADMIN")
                         .anyRequest().authenticated()
                 )
                 // No token / invalid / expired token → 401 (was an empty 403 by default),

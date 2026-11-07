@@ -1,9 +1,12 @@
 package com.honeygroup.honeylms.user;
 
+import com.honeygroup.honeylms.audit.AuditAction;
+import com.honeygroup.honeylms.audit.AuditService;
 import com.honeygroup.honeylms.user.dto.CreateTrainerRequest;
 import com.honeygroup.honeylms.user.dto.UserSummary;
 import com.honeygroup.honeylms.common.ForbiddenActionException;
 import java.util.List;
+import java.util.Map;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
@@ -15,13 +18,16 @@ public class UserAccountService {
     private final UserAccountRepository userAccountRepository;
     private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
+    private final AuditService auditService;
 
     public UserAccountService(UserAccountRepository userAccountRepository,
                                RoleRepository roleRepository,
-                               PasswordEncoder passwordEncoder) {
+                               PasswordEncoder passwordEncoder,
+                               AuditService auditService) {
         this.userAccountRepository = userAccountRepository;
         this.roleRepository = roleRepository;
         this.passwordEncoder = passwordEncoder;
+        this.auditService = auditService;
     }
 
     /**
@@ -51,7 +57,9 @@ public class UserAccountService {
                 .active(true)
                 .build();
 
-        return toSummary(userAccountRepository.save(account));
+        UserAccount saved = userAccountRepository.save(account);
+        auditService.record(AuditAction.TRAINER_CREATED, "USER_ACCOUNT", saved.getId(), Map.of("email", saved.getEmail()));
+        return toSummary(saved);
     }
 
     /** US-ADMIN-01 — Manage users. ADMIN only (see SecurityConfig). Sorted by name. */
@@ -84,7 +92,10 @@ public class UserAccountService {
         }
 
         account.setActive(active);
-        return toSummary(userAccountRepository.save(account));
+        UserAccount saved = userAccountRepository.save(account);
+        auditService.record(active ? AuditAction.ACCOUNT_ACTIVATED : AuditAction.ACCOUNT_DEACTIVATED,
+                "USER_ACCOUNT", userId, Map.of("email", account.getEmail()));
+        return toSummary(saved);
     }
 
     private UserSummary toSummary(UserAccount account) {
