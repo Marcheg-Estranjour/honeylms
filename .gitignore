@@ -19,3 +19,7 @@ frontend/.angular/
 
 # Env
 .env
+
+# TEST RESTAURATION
+*.dump
+restauration.log
