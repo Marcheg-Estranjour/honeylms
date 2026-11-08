@@ -39,8 +39,11 @@ describe('errorInterceptor', () => {
   });
 
   it('leaves a 401 from /api/auth/login to the login page (bad credentials)', () => {
-    http.post('/api/auth/login', {}).subscribe({ error: () => {} });
+    let status: number | undefined;
+    http.post('/api/auth/login', {}).subscribe({ error: (e) => (status = e.status) });
     httpTesting.expectOne('/api/auth/login').flush(null, { status: 401, statusText: 'Unauthorized' });
+
+    expect(status).toBe(401); // the error still reaches the login page, which shows the message
 
     expect(logout).not.toHaveBeenCalled();
     expect(navigate).not.toHaveBeenCalled();

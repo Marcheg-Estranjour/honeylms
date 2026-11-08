@@ -34,6 +34,10 @@ jobs:
       - name: Install dependencies (exact versions from package-lock.json)
         run: npm ci
 
+      # CP11 - code quality: ESLint (angular-eslint rules for TypeScript and templates).
+      - name: Lint (ESLint)
+        run: npx ng lint
+
       - name: Run unit tests (Vitest, headless)
         run: npx ng test --watch=false
 
