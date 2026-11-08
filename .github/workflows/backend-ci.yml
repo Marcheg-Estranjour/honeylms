@@ -53,3 +53,26 @@ jobs:
           SPRING_DATASOURCE_USERNAME: honeylms
           SPRING_DATASOURCE_PASSWORD: honeylms
         run: ./mvnw -B clean verify
+
+      # CP11 - the coverage report is kept with each run and summarised on the run page.
+      - name: Coverage summary (JaCoCo)
+        if: always()
+        working-directory: backend
+        run: |
+          CSV=target/site/jacoco/jacoco.csv
+          if [ ! -f "$CSV" ]; then echo "No JaCoCo report" >> "$GITHUB_STEP_SUMMARY"; exit 0; fi
+          awk -F, 'NR>1 { im+=$4; ic+=$5; bm+=$6; bc+=$7; lm+=$8; lc+=$9 }
+            END {
+              printf "## Couverture des tests (JaCoCo)\n\n| Mesure | Couverture |\n|---|---|\n"
+              printf "| Lignes | %.1f %% (%d / %d) |\n", 100*lc/(lc+lm), lc, lc+lm
+              printf "| Branches | %.1f %% (%d / %d) |\n", 100*bc/(bc+bm), bc, bc+bm
+              printf "| Instructions | %.1f %% |\n", 100*ic/(ic+im)
+            }' "$CSV" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jacoco-report
+          path: backend/target/site/jacoco/
+          if-no-files-found: ignore

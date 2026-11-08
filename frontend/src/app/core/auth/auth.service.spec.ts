@@ -51,11 +51,15 @@ describe('AuthService', () => {
   });
 
   it('does not store anything when login fails', () => {
-    service.login({ email: 'x@example.com', password: 'wrong-pass' }).subscribe({ error: () => {} });
+    let status: number | undefined;
+    service
+      .login({ email: 'x@example.com', password: 'wrong-pass' })
+      .subscribe({ error: (e) => (status = e.status) });
     http
       .expectOne('/api/auth/login')
       .flush({ status: 401, message: 'Invalid credentials' }, { status: 401, statusText: 'Unauthorized' });
 
+    expect(status).toBe(401);
     expect(service.isAuthenticated()).toBe(false);
     expect(service.getAccessToken()).toBeNull();
   });
