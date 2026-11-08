@@ -9,7 +9,7 @@ import { defineConfig, devices } from '@playwright/test';
  * (database, backend, seed). Unit tests (Vitest, JUnit) stay the CI safety net.
  * Tests create their own uniquely named student, so they can be replayed on the same database.
  *
- * E2E_BASE_URL=http://localhost:8000 → run against the production-like Docker image (nginx)
+ * E2E_BASE_URL=http://127.0.0.1:8000 → run against the production-like Docker image (nginx)
  * instead of ng serve (no dev server is started in that case).
  */
 const baseURL = process.env['E2E_BASE_URL'] || 'http://localhost:4200';

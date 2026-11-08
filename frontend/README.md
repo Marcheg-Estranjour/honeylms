@@ -303,7 +303,8 @@ ajoute les en-têtes de sécurité (CSP, `nosniff`, `X-Frame-Options`, `Referrer
 
 - Démo « comme en production » : **http://localhost:8000** (port modifiable : `FRONTEND_PORT=…`).
 - Développement : toujours `npm start` sur http://localhost:4200.
-- Tests E2E contre l'image : `E2E_BASE_URL=http://localhost:8000 npm run e2e:docker`.
+- Tests E2E contre l'image : `E2E_BASE_URL=http://127.0.0.1:8000 npm run e2e:docker`
+  (127.0.0.1 plutôt que `localhost`, qui peut partir en IPv6 dans le conteneur Playwright).
 - Configuration : `Dockerfile`, `nginx/default.conf`, `nginx/security-headers.conf`.
 
 ---
