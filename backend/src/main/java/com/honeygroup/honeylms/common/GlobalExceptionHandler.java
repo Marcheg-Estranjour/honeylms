@@ -26,6 +26,7 @@ import com.honeygroup.honeylms.user.InvalidCredentialsException;
 import com.honeygroup.honeylms.user.UserNotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.stream.Collectors;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.FieldError;
@@ -223,6 +224,19 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiError> handleNoResource(NoResourceFoundException ex, HttpServletRequest request) {
         return build(HttpStatus.NOT_FOUND,
                 "No endpoint " + request.getMethod() + " " + request.getRequestURI(), request);
+    }
+
+    /**
+     * Safety net for concurrent requests (CP8 - data access conflicts). The services check
+     * "already exists?" before inserting, but two requests can pass that check at the same time:
+     * the second INSERT then violates a UNIQUE constraint (submission, enrollment, class member...).
+     * Answered as 409 like the business check, instead of an unhandled 500. The SQL detail is
+     * never sent to the client (it may contain table and column names).
+     */
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<ApiError> handleDataIntegrityViolation(DataIntegrityViolationException ex,
+                                                                 HttpServletRequest request) {
+        return build(HttpStatus.CONFLICT, "The request conflicts with the current state of the data", request);
     }
 
     private ResponseEntity<ApiError> build(HttpStatus status, String message, HttpServletRequest request) {

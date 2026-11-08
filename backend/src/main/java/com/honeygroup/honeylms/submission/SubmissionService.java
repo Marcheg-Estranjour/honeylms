@@ -19,6 +19,7 @@ import com.honeygroup.honeylms.user.UserAccount;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -78,7 +79,16 @@ public class SubmissionService {
                 .status(SubmissionStatus.SUBMITTED)
                 .build();
 
-        return toDetail(submissionRepository.save(submission));
+        try {
+            return toDetail(submissionRepository.save(submission));
+        } catch (DataIntegrityViolationException e) {
+            // Race condition: a concurrent request (double click, two tabs) created the submission
+            // between the check above and this INSERT, which the UNIQUE (assignment_id,
+            // student_user_account_id) constraint refuses. The database rows are rolled back, but
+            // the file is already on disk: delete it, then answer like the business check (409).
+            fileStorageService.delete(storedFile.getStorageKey());
+            throw new AlreadySubmittedException(assignmentId);
+        }
     }
 
     /**
