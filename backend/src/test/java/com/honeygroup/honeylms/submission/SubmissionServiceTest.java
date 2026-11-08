@@ -38,6 +38,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.core.io.ByteArrayResource;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.mock.web.MockMultipartFile;
 
 @ExtendWith(MockitoExtension.class)
@@ -131,6 +132,28 @@ class SubmissionServiceTest {
         assertThatThrownBy(() -> submissionService.submit(2000L, file, "student@example.com"))
                 .isInstanceOf(AlreadySubmittedException.class);
         verify(submissionRepository, never()).save(any());
+    }
+
+    @Test
+    void submit_throwsAlreadySubmittedAndDeletesFile_whenConcurrentInsertViolatesUniqueConstraint() {
+        UserAccount student = student();
+        Assignment assignment = assignment(Instant.now().plus(1, ChronoUnit.DAYS));
+        MockMultipartFile file = new MockMultipartFile("file", "devoir.pdf", "application/pdf", "c".getBytes());
+
+        when(assignmentRepository.findById(2000L)).thenReturn(Optional.of(assignment));
+        when(courseAuthorizationService.resolveRequester("student@example.com")).thenReturn(student);
+        // The check sees nothing: the concurrent request has not committed yet...
+        when(submissionRepository.findByAssignment_IdAndStudent_Id(2000L, 5L)).thenReturn(Optional.empty());
+        when(fileStorageService.store(file)).thenReturn(
+                new FileStorageService.StoredContent("devoir.pdf", "uuid.pdf", "application/pdf", 1L, "abc"));
+        when(storedFileRepository.save(any(StoredFile.class))).thenAnswer(inv -> inv.getArgument(0));
+        // ...but the INSERT hits the UNIQUE (assignment_id, student_user_account_id) constraint.
+        when(submissionRepository.save(any(Submission.class)))
+                .thenThrow(new DataIntegrityViolationException("duplicate key value violates unique constraint"));
+
+        assertThatThrownBy(() -> submissionService.submit(2000L, file, "student@example.com"))
+                .isInstanceOf(AlreadySubmittedException.class);
+        verify(fileStorageService).delete("uuid.pdf");
     }
 
     @Test
