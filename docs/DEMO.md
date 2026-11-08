@@ -15,8 +15,16 @@ git checkout main && git pull
 docker compose down -v                 # repartir d'une base propre (supprime les données !)
 docker compose up -d --build           # base + backend (jeu de démo) + front nginx
 ./scripts/demo-prepare.sh              # ressource PDF + dépôt de Camille « à corriger »
-cd frontend && E2E_BASE_URL=http://localhost:8000 npm run e2e:docker   # 6 tests verts
+cd frontend && E2E_BASE_URL=http://127.0.0.1:8000 npm run e2e:docker   # 6 tests verts
 ```
+
+> Utiliser **127.0.0.1** et non `localhost` : dans le conteneur Playwright (`--network host`),
+> `localhost` peut être résolu en IPv6 (`::1`), et certaines requêtes POST vers le port publié
+> par Docker restent alors sans réponse (inscription, connexion refusée). Le script remplace
+> de lui-même `localhost` par `127.0.0.1` quand c'est possible.
+>
+> Si Docker exige `sudo` sur le poste : `sudo env "PATH=$PATH" E2E_BASE_URL=http://127.0.0.1:8000 npm run e2e:docker`,
+> puis `sudo chown -R "$USER:$USER" playwright-report test-results` avant `npm run e2e:report`.
 
 > Les tests E2E créent une étudiante « Emma Test… » désactivée : sans gravité, mais pour une
 > liste d'utilisateurs impeccable, refaire `down -v` / `up` / `demo-prepare.sh` **après** les tests.
